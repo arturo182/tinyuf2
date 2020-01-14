@@ -7,9 +7,11 @@ TinyUF2 is an open source cross-platform [UF2](https://github.com/Microsoft/uf2)
 ## Building
 
 Checkout the code and sync submodules:
+
 	$ git clone https://github.com/arturo182/tinyuf2.git
 	$ cd tinyuf2
 	$ git submodule update --init --recursive
 
 Specify the board you want to build for:
+
 	$ make BOARD=mimxrt1010_evk
