@@ -1,0 +1,36 @@
+name: Build
+
+on: [pull_request, push]
+
+jobs:
+  unit-test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout TinyUF2
+      uses: actions/checkout@v2
+
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        boards: ['mimxrt1010_evk']
+    steps:
+    - name: Install Toolchains
+      run: |
+        xpm install --global @xpack-dev-tools/arm-none-eabi-gcc@latest
+        echo "::add-path::`echo $HOME/opt/xPacks/@xpack-dev-tools/arm-none-eabi-gcc/*/.content/bin`"
+
+    - name: Checkout TinyUSB
+      uses: actions/checkout@v2
+
+    - name: Checkout submodules
+      shell: bash
+      run: |
+        git submodule sync --recursive
+        git submodule update --init --force --recursive
+
+    - name: Build
+      env:
+          BOARDS: ${{ matrix.boards }}
+      run: for board in $BOARDS do; make BOARD=$b; done
