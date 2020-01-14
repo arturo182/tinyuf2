@@ -3,12 +3,6 @@ name: Build
 on: [pull_request, push]
 
 jobs:
-  unit-test:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout TinyUF2
-      uses: actions/checkout@v2
-
   build:
     runs-on: ubuntu-latest
     strategy:
@@ -16,8 +10,12 @@ jobs:
       matrix:
         boards: ['mimxrt1010_evk']
     steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v1.1.0
+
     - name: Install Toolchains
       run: |
+        npm install --global xpm
         xpm install --global @xpack-dev-tools/arm-none-eabi-gcc@latest
         echo "::add-path::`echo $HOME/opt/xPacks/@xpack-dev-tools/arm-none-eabi-gcc/*/.content/bin`"
 
@@ -33,4 +31,4 @@ jobs:
     - name: Build
       env:
           BOARDS: ${{ matrix.boards }}
-      run: for board in $BOARDS do; make BOARD=$b; done
+      run: for board in $BOARDS; do make BOARD=$board; done
