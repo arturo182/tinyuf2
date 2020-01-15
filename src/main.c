@@ -24,12 +24,15 @@
  *
  */
 
+#include <stdint.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
-#include "bsp/board.h"
+#include "bsp.h"
 #include "tusb.h"
 
 static uint32_t blink_interval_ms = 500;
+uint32_t reset_millis = 0;
 
 void led_blinking_task(void)
 {
@@ -46,14 +49,26 @@ void led_blinking_task(void)
     led_state = !led_state;
 }
 
+void reset_task(void)
+{
+  if (!reset_millis)
+    return;
+
+  if (board_millis() > reset_millis)
+    board_reset();
+}
+
 int main(void)
 {
     board_init();
     tusb_init();
 
+    printf("Hello TinyUF2!\r\n");
+
     while (1) {
         tud_task();
         led_blinking_task();
+        reset_task();
     }
 
     return 0;

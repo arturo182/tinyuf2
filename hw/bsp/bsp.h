@@ -1,8 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2019 Ha Thach (tinyusb.org)
- * Copyright (c) 2020 Artur Pacholec
+ * Copyright (c) 2020, Artur Pacholec
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,18 +23,20 @@
  *
  */
 
-#include "tusb.h"
+#ifndef _BOARD_H_
+#define _BOARD_H_
 
-#if CFG_TUD_HID
+#include <stdint.h>
+#include <stdbool.h>
 
-uint16_t tud_hid_get_report_cb(uint8_t report_id, hid_report_type_t report_type, uint8_t* buffer, uint16_t reqlen)
-{
-    return 0;
-}
+#include "board_config.h"
 
-void tud_hid_set_report_cb(uint8_t report_id, hid_report_type_t report_type, uint8_t const* buffer, uint16_t bufsize)
-{
-
-}
+void board_flash_flush(void);
+uint32_t board_flash_read_blocks(uint8_t *dest, uint32_t block, uint32_t num_blocks);
+uint32_t board_flash_write_blocks(const uint8_t *src, uint32_t lba, uint32_t num_blocks);
+uint32_t board_millis(void);
+void board_reset(void);
+void board_led_write(bool state);
+void board_init(void);
 
 #endif

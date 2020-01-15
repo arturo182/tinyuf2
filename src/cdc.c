@@ -1,7 +1,6 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2019 Ha Thach (tinyusb.org)
  * Copyright (c) 2020 Artur Pacholec
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -26,16 +25,27 @@
 
 #include "tusb.h"
 
-#if CFG_TUD_HID
+#if CFG_TUD_CDC
 
-uint16_t tud_hid_get_report_cb(uint8_t report_id, hid_report_type_t report_type, uint8_t* buffer, uint16_t reqlen)
+int _write(int fhdl, const char *buf, size_t count)
 {
-    return 0;
+    if (!tud_cdc_connected())
+        return 0;
+
+    for (size_t i = 0; i < count; ++i)
+        tud_cdc_write_char(buf[i]);
+
+    tud_cdc_write_flush();
+
+    return count;
 }
 
-void tud_hid_set_report_cb(uint8_t report_id, hid_report_type_t report_type, uint8_t const* buffer, uint16_t bufsize)
+int _read(int fhdl, char *buf, size_t count)
 {
+    if (!tud_cdc_connected() || !tud_cdc_available())
+        return 0;
 
+    return tud_cdc_read(buf, count);
 }
 
 #endif
