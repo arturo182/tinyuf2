@@ -376,6 +376,12 @@ void board_init(void)
     NVIC_SetPriority(SysTick_IRQn, 2);
 }
 
+
+void board_delay_ms(uint32_t ms)
+{
+  SDK_DelayAtLeastUs(ms * 1000, SystemCoreClock);
+}
+
 void USB_OTG1_IRQHandler(void)
 {
 #if CFG_TUSB_RHPORT0_MODE & OPT_MODE_HOST
@@ -385,4 +391,44 @@ void USB_OTG1_IRQHandler(void)
 #if CFG_TUSB_RHPORT0_MODE & OPT_MODE_DEVICE
     tud_isr(0);
 #endif
+}
+
+#include "uf2.h"
+
+extern uint32_t _bootloader_dbl_tap;
+
+void board_check_app_start(void)
+{
+  uint32_t app_start_address = *(uint32_t *)(APP_START_ADDRESS + 4);
+
+  /**
+   * Test reset vector of application @ APP_START_ADDRESS + 4
+   * Sanity check on the Reset_Handler address
+   */
+  if (app_start_address < APP_START_ADDRESS || app_start_address > BOARD_FLASH_BASE + BOARD_FLASH_SIZE) {
+    //printf("No valid app, staying in bootloader\r\n");
+    return; // stay in bootloader
+  }
+
+  if (_bootloader_dbl_tap == DBL_TAP_MAGIC) {
+    //printf("Detected double tap\r\n");
+    _bootloader_dbl_tap = 0;
+    return; // stay in bootloader
+  }
+
+  if (_bootloader_dbl_tap != DBL_TAP_MAGIC_QUICK_BOOT) {
+      _bootloader_dbl_tap = DBL_TAP_MAGIC;
+      board_delay_ms(500);
+  }
+
+  _bootloader_dbl_tap = 0;
+
+  /* Rebase the Stack Pointer */
+  __set_MSP(*(uint32_t *)APP_START_ADDRESS);
+
+  /* Rebase the vector table base address */
+  SCB->VTOR = ((uint32_t)APP_START_ADDRESS & SCB_VTOR_TBLOFF_Msk);
+
+  /* Jump to application Reset Handler in the application */
+  asm("bx %0" ::"r"(app_start_address));
 }

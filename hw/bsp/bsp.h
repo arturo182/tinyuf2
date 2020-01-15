@@ -38,5 +38,7 @@ uint32_t board_millis(void);
 void board_reset(void);
 void board_led_write(bool state);
 void board_init(void);
+void board_delay_ms(uint32_t ms);
+void board_check_app_start(void);
 
 #endif

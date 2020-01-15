@@ -61,6 +61,9 @@ void reset_task(void)
 int main(void)
 {
     board_init();
+
+    board_check_app_start();
+
     tusb_init();
 
     printf("Hello TinyUF2!\r\n");
