@@ -258,7 +258,7 @@ void board_reset(void)
 
 void board_led_write(bool state)
 {
-    GPIO_PinWrite(LED_PORT, LED_PIN, state ? LED_STATE_ON : (1-LED_STATE_ON));
+    GPIO_PinWrite(LED_GPIO_PORT, LED_GPIO_PIN, state ? LED_STATE_ON : (1-LED_STATE_ON));
 }
 
 #include "fsl_lpuart.h"
@@ -273,25 +273,17 @@ void board_init(void)
     CLOCK_EnableClock(kCLOCK_Iomuxc);
 
     // LED
-    IOMUXC_SetPinMux(LED_PINMUX, 0U);
-    IOMUXC_SetPinConfig(LED_PINMUX, 0x10B0U);
-
+    IOMUXC_SetPinMux(PIN_LED, PIN_LED_MUX);
+    IOMUXC_SetPinConfig(PIN_LED, PIN_LED_CFG);
     gpio_pin_config_t led_config = { kGPIO_DigitalOutput, 0, kGPIO_NoIntmode };
-    GPIO_PinInit(LED_PORT, LED_PIN, &led_config);
+    GPIO_PinInit(LED_GPIO_PORT, LED_GPIO_PIN, &led_config);
     board_led_write(false);
 
-    // Button
-    //IOMUXC_SetPinMux( BUTTON_PINMUX, 0U);
-    //IOMUXC_SetPinConfig(BUTTON_PINMUX, 0x01B0A0U);
-    //gpio_pin_config_t button_config = { kGPIO_DigitalInput, 0, kGPIO_IntRisingEdge, };
-    //GPIO_PinInit(BUTTON_PORT, BUTTON_PIN, &button_config);
-
     // UART
-    IOMUXC_SetPinMux( UART_TX_PINMUX, 0U);
-    IOMUXC_SetPinMux( UART_RX_PINMUX, 0U);
-    IOMUXC_SetPinConfig( UART_TX_PINMUX, 0x10B0u);
-    IOMUXC_SetPinConfig( UART_RX_PINMUX, 0x10B0u);
-
+    IOMUXC_SetPinMux( PIN_UART_TX, PIN_UART_TX_MUX);
+    IOMUXC_SetPinMux( PIN_UART_RX, PIN_UART_RX_MUX);
+    IOMUXC_SetPinConfig(PIN_UART_TX, PIN_UART_TX_CFG);
+    IOMUXC_SetPinConfig(PIN_UART_RX, PIN_UART_RX_CFG);
     lpuart_config_t uart_config;
     LPUART_GetDefaultConfig(&uart_config);
     uart_config.baudRate_Bps = 115200;
@@ -319,24 +311,24 @@ void board_init(void)
     usb_phy->TX = phytx;
 
     //----------- FLEXSPI ----------//
-    IOMUXC_SetPinMux(PIN_SS0, PIN_MUX_SS0);
-    IOMUXC_SetPinMux(PIN_DATA1, PIN_MUX_DATA1);
-    IOMUXC_SetPinMux(PIN_DATA2, PIN_MUX_DATA2);
-    IOMUXC_SetPinMux(PIN_DATA0, PIN_MUX_DATA0);
-    IOMUXC_SetPinMux(PIN_SCLK, PIN_MUX_SCLK);
-    IOMUXC_SetPinMux(PIN_DATA3, PIN_MUX_DATA3);
+    IOMUXC_SetPinMux(PIN_SS0,   PIN_SS0_MUX);
+    IOMUXC_SetPinMux(PIN_DATA1, PIN_DATA1_MUX);
+    IOMUXC_SetPinMux(PIN_DATA2, PIN_DATA2_MUX);
+    IOMUXC_SetPinMux(PIN_DATA0, PIN_DATA0_MUX);
+    IOMUXC_SetPinMux(PIN_SCLK,  PIN_SCLK_MUX);
+    IOMUXC_SetPinMux(PIN_DATA3, PIN_DATA3_MUX);
 #ifdef PIN_DQS
-    IOMUXC_SetPinMux(PIN_DQS, PIN_MUX_DQS);
+    IOMUXC_SetPinMux(PIN_DQS,   PIN_DQS_MUX);
 #endif
     
-    IOMUXC_SetPinConfig(PIN_SS0, PIN_CFG_SS0);
-    IOMUXC_SetPinConfig(PIN_DATA1, PIN_CFG_DATA1);
-    IOMUXC_SetPinConfig(PIN_DATA2, PIN_CFG_DATA2);
-    IOMUXC_SetPinConfig(PIN_DATA0, PIN_CFG_DATA0);
-    IOMUXC_SetPinConfig(PIN_SCLK, PIN_CFG_SCLK);
-    IOMUXC_SetPinConfig(PIN_DATA3, PIN_CFG_DATA3);
+    IOMUXC_SetPinConfig(PIN_SS0,   PIN_SS0_CFG);
+    IOMUXC_SetPinConfig(PIN_DATA1, PIN_DATA1_CFG);
+    IOMUXC_SetPinConfig(PIN_DATA2, PIN_DATA2_CFG);
+    IOMUXC_SetPinConfig(PIN_DATA0, PIN_DATA0_CFG);
+    IOMUXC_SetPinConfig(PIN_SCLK,  PIN_SCLK_CFG);
+    IOMUXC_SetPinConfig(PIN_DATA3, PIN_DATA3_CFG);
 #ifdef PIN_DQS
-    IOMUXC_SetPinConfig(PIN_DQS, PIN_CFG_DQS);
+    IOMUXC_SetPinConfig(PIN_DQS,   PIN_DQS_CFG);
 #endif
     SCB_DisableDCache();
 
@@ -403,23 +395,43 @@ void board_check_app_start(void)
    * Sanity check on the Reset_Handler address
    */
   if (app_start_address < APP_START_ADDRESS || app_start_address > BOARD_FLASH_BASE + BOARD_FLASH_SIZE) {
-    //printf("No valid app, staying in bootloader\r\n");
     return; // stay in bootloader
   }
 
   if (_bootloader_dbl_tap == DBL_TAP_MAGIC) {
-    //printf("Detected double tap\r\n");
     _bootloader_dbl_tap = 0;
     return; // stay in bootloader
   }
 
   if (_bootloader_dbl_tap != DBL_TAP_MAGIC_QUICK_BOOT) {
-      _bootloader_dbl_tap = DBL_TAP_MAGIC;
-      board_led_write(true);
-      board_delay_ms(500);
-      board_led_write(false);      
+#ifdef BOARD_MULTITAP_COUNT
+    if (MULTITAP_AMCOUNTING(_bootloader_dbl_tap)) {
+      // A multi-tap count is in progress - see if it's expired
+      _bootloader_dbl_tap = MULTITAP_SETCOUNT( MULTITAP_GETCOUNT(_bootloader_dbl_tap)+1 );
+      if (MULTITAP_GETCOUNT(_bootloader_dbl_tap) == BOARD_MULTITAP_COUNT) {
+        _bootloader_dbl_tap = 0;        
+        return; // We're done, stay in bootloader
+      }
+    }
+    else
+      // The multitap is just starting...
+      _bootloader_dbl_tap = MULTITAP_SETCOUNT(1);
+#else
+    _bootloader_dbl_tap = DBL_TAP_MAGIC;
+#endif
+    
+    // Now wait to see if the user wants to intervene...
+#ifdef BOARD_LED_ON_UF2_START
+    board_led_write(true);
+#endif
+    board_delay_ms(BOARD_TAP_WAIT);
+#ifdef BOARD_LED_ON_UF2_START
+    board_led_write(false);
+#endif
   }
 
+
+  // Boot into the application
   _bootloader_dbl_tap = 0;
 
   /* Rebase the Stack Pointer */

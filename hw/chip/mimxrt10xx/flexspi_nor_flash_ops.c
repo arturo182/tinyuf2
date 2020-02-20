@@ -375,7 +375,9 @@ void flexspi_nor_flash_init(FLEXSPI_Type *base)
     config.ahbConfig.enableAHBBufferable  = true;
     config.ahbConfig.enableReadAddressOpt = true;
     config.ahbConfig.enableAHBCachable    = true;
+#ifdef PIN_DQS
     config.rxSampleClock                  = kFLEXSPI_ReadSampleClkLoopbackFromDqsPad;
+#endif
     FLEXSPI_Init(base, &config);
 
     /* Configure flash settings according to serial flash feature. */

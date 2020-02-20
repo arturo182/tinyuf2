@@ -31,7 +31,12 @@
 #include "bsp.h"
 #include "tusb.h"
 
+#ifndef BOARD_BLINK_INTERVAL
 static uint32_t blink_interval_ms = 500;
+#else
+static uint32_t blink_interval_ms = BOARD_BLINK_INTERVAL;
+#endif
+
 uint32_t reset_millis = 0;
 
 void led_blinking_task(void)
@@ -44,9 +49,8 @@ void led_blinking_task(void)
 
     start_ms += blink_interval_ms;
 
-    board_led_write(led_state);
-
     led_state = !led_state;
+    board_led_write(led_state);
 }
 
 void reset_task(void)

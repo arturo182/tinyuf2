@@ -49,8 +49,14 @@ static inline bool is_uf2_block(void *data)
            bl->magicEnd == UF2_MAGIC_END;
 }
 
-#define DBL_TAP_MAGIC 0xf01669ef // Randomly selected, adjusted to have first and last bit set
+#define DBL_TAP_MAGIC            0xf01669ef     // Randomly selected, adjusted to have first and last bit set
 #define DBL_TAP_MAGIC_QUICK_BOOT 0xf02669ef
+
+// These entries support multitap entry into the bootloader by putting the count into byte 1
+#define MULTITAP_MAGIC_COUNTING 0xf01700ef
+#define MULTITAP_AMCOUNTING(x)  (((x)&0xFFFF00FF)==MULTITAP_MAGIC_COUNTING)
+#define MULTITAP_GETCOUNT(x)    (((x)>>8)&0xff)
+#define MULTITAP_SETCOUNT(y)    (MULTITAP_MAGIC_COUNTING|(((y)&0xff)<<8))
 
 // Static block size for all memories
 #define UDI_MSC_BLOCK_SIZE 512L
