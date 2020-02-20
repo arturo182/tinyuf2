@@ -256,16 +256,6 @@ void board_reset(void)
     NVIC_SystemReset();
 }
 
-#define LED_PINMUX            IOMUXC_GPIO_11_GPIOMUX_IO11
-#define LED_PORT              GPIO1
-#define LED_PIN               11
-#define LED_STATE_ON          0
-
-// UART
-#define UART_PORT             LPUART1
-#define UART_RX_PINMUX        IOMUXC_GPIO_09_LPUART1_RXD
-#define UART_TX_PINMUX        IOMUXC_GPIO_10_LPUART1_TXD
-
 void board_led_write(bool state)
 {
     GPIO_PinWrite(LED_PORT, LED_PIN, state ? LED_STATE_ON : (1-LED_STATE_ON));
@@ -329,22 +319,25 @@ void board_init(void)
     usb_phy->TX = phytx;
 
     //----------- FLEXSPI ----------//
-    IOMUXC_SetPinMux(IOMUXC_GPIO_SD_06_FLEXSPI_A_SS0_B, 1U);
-    IOMUXC_SetPinMux(IOMUXC_GPIO_SD_07_FLEXSPI_A_DATA1,1U);
-    IOMUXC_SetPinMux(IOMUXC_GPIO_SD_08_FLEXSPI_A_DATA2, 1U);
-    IOMUXC_SetPinMux(IOMUXC_GPIO_SD_09_FLEXSPI_A_DATA0, 1U);
-    IOMUXC_SetPinMux(IOMUXC_GPIO_SD_10_FLEXSPI_A_SCLK, 1U);
-    IOMUXC_SetPinMux(IOMUXC_GPIO_SD_11_FLEXSPI_A_DATA3, 1U);
-    IOMUXC_SetPinMux(IOMUXC_GPIO_SD_12_FLEXSPI_A_DQS, 1U);
-
-    IOMUXC_SetPinConfig(IOMUXC_GPIO_SD_06_FLEXSPI_A_SS0_B,0x10E1U);
-    IOMUXC_SetPinConfig(IOMUXC_GPIO_SD_07_FLEXSPI_A_DATA1, 0x10E1U);
-    IOMUXC_SetPinConfig(IOMUXC_GPIO_SD_08_FLEXSPI_A_DATA2, 0x10E1U);
-    IOMUXC_SetPinConfig(IOMUXC_GPIO_SD_09_FLEXSPI_A_DATA0, 0x10E1U);
-    IOMUXC_SetPinConfig(IOMUXC_GPIO_SD_10_FLEXSPI_A_SCLK, 0x10E1U);
-    IOMUXC_SetPinConfig(IOMUXC_GPIO_SD_11_FLEXSPI_A_DATA3, 0x10E1U);
-    IOMUXC_SetPinConfig(IOMUXC_GPIO_SD_12_FLEXSPI_A_DQS, 0x10E1U);
-
+    IOMUXC_SetPinMux(PIN_SS0, PIN_MUX_SS0);
+    IOMUXC_SetPinMux(PIN_DATA1, PIN_MUX_DATA1);
+    IOMUXC_SetPinMux(PIN_DATA2, PIN_MUX_DATA2);
+    IOMUXC_SetPinMux(PIN_DATA0, PIN_MUX_DATA0);
+    IOMUXC_SetPinMux(PIN_SCLK, PIN_MUX_SCLK);
+    IOMUXC_SetPinMux(PIN_DATA3, PIN_MUX_DATA3);
+#ifdef PIN_DQS
+    IOMUXC_SetPinMux(PIN_DQS, PIN_MUX_DQS);
+#endif
+    
+    IOMUXC_SetPinConfig(PIN_SS0, PIN_CFG_SS0);
+    IOMUXC_SetPinConfig(PIN_DATA1, PIN_CFG_DATA1);
+    IOMUXC_SetPinConfig(PIN_DATA2, PIN_CFG_DATA2);
+    IOMUXC_SetPinConfig(PIN_DATA0, PIN_CFG_DATA0);
+    IOMUXC_SetPinConfig(PIN_SCLK, PIN_CFG_SCLK);
+    IOMUXC_SetPinConfig(PIN_DATA3, PIN_CFG_DATA3);
+#ifdef PIN_DQS
+    IOMUXC_SetPinConfig(PIN_DQS, PIN_CFG_DQS);
+#endif
     SCB_DisableDCache();
 
     flexspi_nor_flash_init(FLEXSPI);
@@ -379,7 +372,11 @@ void board_init(void)
 
 void board_delay_ms(uint32_t ms)
 {
-  SDK_DelayAtLeastUs(ms * 1000, SystemCoreClock);
+#if defined(MIMXRT1011_SERIES)
+    SDK_DelayAtLeastUs(ms, SystemCoreClock);
+#else
+    SDK_DelayAtLeastUs(ms*1000);
+#endif
 }
 
 void USB_OTG1_IRQHandler(void)
@@ -418,7 +415,9 @@ void board_check_app_start(void)
 
   if (_bootloader_dbl_tap != DBL_TAP_MAGIC_QUICK_BOOT) {
       _bootloader_dbl_tap = DBL_TAP_MAGIC;
+      board_led_write(true);
       board_delay_ms(500);
+      board_led_write(false);      
   }
 
   _bootloader_dbl_tap = 0;
