@@ -26,7 +26,7 @@
 #include <stdio.h>
 
 #include "tusb.h"
-#include "board_config.h"
+#include "bsp.h"
 #include "clock_config.h"
 
 #include "fsl_device_registers.h"
@@ -63,8 +63,8 @@ volatile uint32_t system_ticks = 0;
 #define FLASH_BUSY_STATUS_OFFSET 0
 #define FLASH_ERROR_STATUS_MASK 0x0e
 
-uint32_t _flash_page_addr = NO_CACHE;
-uint8_t  _flash_cache[SECTOR_SIZE] __attribute__((aligned(4)));
+static uint32_t _flash_page_addr = NO_CACHE;
+static uint8_t  _flash_cache[SECTOR_SIZE] __attribute__((aligned(4)));
 
 flexspi_device_config_t deviceconfig =
 {
@@ -178,23 +178,22 @@ void board_flash_flush(void)
 
         __disable_irq();
         status = flexspi_nor_flash_erase_sector(FLEXSPI, sector_addr);
+        __enable_irq();
         if (status != kStatus_Success) {
             printf("Page erase failure %ld!\r\n", status);
             return;
         }
-        __enable_irq();
 
         for (int i = 0; i < SECTOR_SIZE / FLASH_PAGE_SIZE; ++i) {
             __disable_irq();
             status = flexspi_nor_flash_page_program(FLEXSPI, sector_addr + i * FLASH_PAGE_SIZE, (void *)_flash_cache + i * FLASH_PAGE_SIZE);
+            __enable_irq();
+            DCACHE_CleanInvalidateByRange(_flash_page_addr, SECTOR_SIZE);
             if (status != kStatus_Success) {
                 printf("Page program failure %ld!\r\n", status);
                 return;
             }
-            __enable_irq();
         }
-
-        DCACHE_CleanInvalidateByRange(_flash_page_addr, SECTOR_SIZE);
     }
 }
 
@@ -210,7 +209,7 @@ uint32_t board_flash_read_blocks(uint8_t *dest, uint32_t block, uint32_t num_blo
 
 uint32_t board_flash_write_blocks(const uint8_t *src, uint32_t lba, uint32_t num_blocks)
 {
-    //printf("%s: src %p, lba %ld, num %ld\r\n", __func__, src, lba, num_blocks);
+  //  printf("%s: src %p, lba %ld, num %ld\r\n", __func__, src, lba, num_blocks);
 
     while (num_blocks) {
         uint32_t const addr      = lba2addr(lba);
@@ -221,6 +220,7 @@ uint32_t board_flash_write_blocks(const uint8_t *src, uint32_t lba, uint32_t num
 
         if (page_addr != _flash_page_addr) {
             // Write out anything in cache before overwriting it.
+
             board_flash_flush();
 
             _flash_page_addr = page_addr;
@@ -365,7 +365,7 @@ void board_init(void)
 void board_delay_ms(uint32_t ms)
 {
 #if defined(MIMXRT1011_SERIES)
-    SDK_DelayAtLeastUs(ms, SystemCoreClock);
+    SDK_DelayAtLeastUs(ms*1000, SystemCoreClock);
 #else
     SDK_DelayAtLeastUs(ms*1000);
 #endif
@@ -387,8 +387,28 @@ void USB_OTG1_IRQHandler(void)
 extern uint32_t _bootloader_dbl_tap;
 
 void board_check_app_start(void)
+
 {
-  uint32_t app_start_address = *(uint32_t *)(APP_START_ADDRESS + 4);
+  register uint32_t app_start_address = *(uint32_t *)(APP_START_ADDRESS + 4);
+
+  if (_bootloader_dbl_tap != DBL_TAP_MAGIC_QUICK_BOOT)
+    return;
+
+  _bootloader_dbl_tap = 0;
+
+  /* Rebase the Stack Pointer */
+  __set_MSP(*(uint32_t *)APP_START_ADDRESS);
+
+  /* Rebase the vector table base address */
+  SCB->VTOR = ((uint32_t)APP_START_ADDRESS & SCB_VTOR_TBLOFF_Msk);
+
+  /* Jump to application Reset Handler in the application */
+  asm("bx %0" ::"r"(app_start_address));  
+}
+
+void board_check_tinyuf2_start(void)
+{
+  register uint32_t app_start_address = *(uint32_t *)(APP_START_ADDRESS + 4);
 
   /**
    * Test reset vector of application @ APP_START_ADDRESS + 4
@@ -403,19 +423,18 @@ void board_check_app_start(void)
     return; // stay in bootloader
   }
 
-  if (_bootloader_dbl_tap != DBL_TAP_MAGIC_QUICK_BOOT) {
 #ifdef BOARD_MULTITAP_COUNT
-    if (MULTITAP_AMCOUNTING(_bootloader_dbl_tap)) {
-      // A multi-tap count is in progress - see if it's expired
-      _bootloader_dbl_tap = MULTITAP_SETCOUNT( MULTITAP_GETCOUNT(_bootloader_dbl_tap)+1 );
-      if (MULTITAP_GETCOUNT(_bootloader_dbl_tap) == BOARD_MULTITAP_COUNT) {
-        _bootloader_dbl_tap = 0;        
-        return; // We're done, stay in bootloader
-      }
+  if (MULTITAP_AMCOUNTING(_bootloader_dbl_tap)) {
+    // A multi-tap count is in progress - see if it's expired
+    _bootloader_dbl_tap = MULTITAP_SETCOUNT( MULTITAP_GETCOUNT(_bootloader_dbl_tap)+1 );
+    if (MULTITAP_GETCOUNT(_bootloader_dbl_tap) == BOARD_MULTITAP_COUNT) {
+      _bootloader_dbl_tap = 0;
+      return; // We're done, stay in bootloader
     }
-    else
-      // The multitap is just starting...
-      _bootloader_dbl_tap = MULTITAP_SETCOUNT(1);
+  }
+  else
+    // The multitap is just starting...
+    _bootloader_dbl_tap = MULTITAP_SETCOUNT(1);
 #else
     _bootloader_dbl_tap = DBL_TAP_MAGIC;
 #endif
@@ -424,22 +443,14 @@ void board_check_app_start(void)
 #ifdef BOARD_LED_ON_UF2_START
     board_led_write(true);
 #endif
+
     board_delay_ms(BOARD_TAP_WAIT);
+
 #ifdef BOARD_LED_ON_UF2_START
     board_led_write(false);
 #endif
-  }
 
-
-  // Boot into the application
-  _bootloader_dbl_tap = 0;
-
-  /* Rebase the Stack Pointer */
-  __set_MSP(*(uint32_t *)APP_START_ADDRESS);
-
-  /* Rebase the vector table base address */
-  SCB->VTOR = ((uint32_t)APP_START_ADDRESS & SCB_VTOR_TBLOFF_Msk);
-
-  /* Jump to application Reset Handler in the application */
-  asm("bx %0" ::"r"(app_start_address));
+  // If we made to to here then we should boot into the application
+  _bootloader_dbl_tap = DBL_TAP_MAGIC_QUICK_BOOT;
+  board_reset();
 }

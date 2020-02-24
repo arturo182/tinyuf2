@@ -23,6 +23,6 @@ $(BUILD)/uf2_version.h: Makefile
 
 OBJ += $(BUILD)/uf2_version.h
 
-include $(TOP)/hw/chip/$(CHIP_FAMILY)/$(CHIP_VARIANT).mk
+include $(TOP)/hw/chip/$(TUF2_CHIP_FAMILY)/$(TUF2_CHIP_MEMBER)/$(TUF2_CHIP_VARIANT).mk
 include $(TINYUSB_PATH)/tools/top.mk
 include $(TINYUSB_PATH)/examples/rules.mk

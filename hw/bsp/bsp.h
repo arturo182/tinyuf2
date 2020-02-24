@@ -30,6 +30,44 @@
 #include <stdbool.h>
 
 #include "board_config.h"
+#include "pinning_options.h"
+
+#ifndef VOLUME_LABEL
+#define VOLUME_LABEL "UF2BOOT"
+#endif
+
+#ifndef INDEX_URL
+#define INDEX_URL    ""
+#endif
+
+// Generic VID:PID for boards that don't have their own.
+// DO NOT copy a VID:PID from an existing board for a new one,
+// just allow this fallback to be used...that's specifically
+// what it is for.
+#ifndef USB_VID
+#define USB_VID 0x239A
+#endif
+
+#ifndef USB_PID
+#define USB_PID 0x0058
+#endif
+
+#ifndef BOARD_TAP_WAIT
+// How long to wait for tap in mS
+#define BOARD_TAP_WAIT 500
+#endif
+
+#ifndef BOARD_BLINK_INTERVAL
+// Define this for a different blinking interval in mS
+#define BOARD_BLINK_INTERVAL 500
+#endif
+
+// If you want multiple taps (i.e. more than two)
+// define this to the correct value
+// #define BOARD_MULTITAP_COUNT 4
+
+// If you want the LED on while in UF2 boot wait mode
+// #define BOARD_LED_ON_UF2_START
 
 void board_flash_flush(void);
 uint32_t board_flash_read_blocks(uint8_t *dest, uint32_t block, uint32_t num_blocks);
@@ -40,5 +78,6 @@ void board_led_write(bool state);
 void board_init(void);
 void board_delay_ms(uint32_t ms);
 void board_check_app_start(void);
+void board_check_tinyuf2_start(void);
 
 #endif

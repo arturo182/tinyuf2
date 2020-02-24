@@ -31,11 +31,7 @@
 #include "bsp.h"
 #include "tusb.h"
 
-#ifndef BOARD_BLINK_INTERVAL
-static uint32_t blink_interval_ms = 500;
-#else
 static uint32_t blink_interval_ms = BOARD_BLINK_INTERVAL;
-#endif
 
 uint32_t reset_millis = 0;
 
@@ -64,9 +60,10 @@ void reset_task(void)
 
 int main(void)
 {
+    board_check_app_start();
     board_init();
 
-    board_check_app_start();
+    board_check_tinyuf2_start();
 
     tusb_init();
 
