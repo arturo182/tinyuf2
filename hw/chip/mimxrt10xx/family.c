@@ -455,7 +455,7 @@ void board_check_tinyuf2_start(void)
     board_led_write(false);
 #endif
 
-  // If we made to to here then we should boot into the application
+  // If we made to here then we should boot into the application
   _bootloader_dbl_tap = DBL_TAP_MAGIC_QUICK_BOOT;
   board_reset();
 }
