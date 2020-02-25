@@ -28,47 +28,36 @@
 
 // UART Options =====================================
 
-#if defined(PINNING_UART_LPUART1_AD_B0_06_07)
+// Default drive and MUX options for the UART if none are
+// provided in the board_config.h
 
-#define UART_PORT        LPUART1
-#define PIN_UART_RX      IOMUXC_GPIO_AD_B0_07_LPUART1_RX
+#ifndef PIN_UART_RX_MUX
 #define PIN_UART_RX_MUX  2U
+#endif
+
+#ifndef PIN_UART_RX_CFG
 #define PIN_UART_RX_CFG  0x10B0u
-#define PIN_UART_TX      IOMUXC_GPIO_AD_B0_06_LPUART1_TX
+#endif
+
+#ifndef PIN_UART_TX_MUX
 #define PIN_UART_TX_MUX  2U
+#endif
+
+#ifndef PIN_UART_TX_CFG
 #define PIN_UART_TX_CFG  0x10B0u
-
-#else
-
-#error No UART pinning set
-
 #endif
 
 // LED Options ======================================
 
-// LED used for status indication
-#if defined(PINNING_LED_AD_B0_05)
+// Default drive and MUX options for the LED used for status indication
+// if none are provided in the board_config.h
 
-#define PIN_LED          IOMUXC_GPIO_AD_B0_05_GPIO1_IO05
+#ifndef PIN_LED_MUX
 #define PIN_LED_MUX      0U
+#endif
+
+#ifndef PIN_LED_CFG
 #define PIN_LED_CFG      0x10B0U
-#define LED_GPIO_PORT    GPIO1
-#define LED_GPIO_PIN     05
-#define LED_STATE_ON     0
-
-#elif defined(PINNING_LED_EMC_04)
-
-#define PIN_LED          IOMUXC_GPIO_EMC_04_GPIO2_IO04
-#define PIN_LED_MUX      5U
-#define PIN_LED_CFG      0x10B0U
-#define LED_GPIO_PORT    GPIO2
-#define LED_GPIO_PIN     04
-#define LED_STATE_ON     1
-
-#else
-
-#error No LED pinning set
-
 #endif
 
 // QSPI Options =====================================

@@ -28,37 +28,36 @@
 
 // UART Options =====================================
 
-#if defined(PINNING_UART_LPUART1_GPIO_09_10)
+// Default drive and MUX options for the UART if none are
+// provided in the board_config.h
 
-#define UART_PORT       LPUART1
-#define PIN_UART_RX     IOMUXC_GPIO_09_LPUART1_RXD
+#ifndef PIN_UART_RX_MUX
 #define PIN_UART_RX_MUX 0U
+#endif
+
+#ifndef PIN_UART_RX_CFG
 #define PIN_UART_RX_CFG 0x10B0u
-#define PIN_UART_TX     IOMUXC_GPIO_10_LPUART1_TXD
+#endif
+
+#ifndef PIN_UART_TX_MUX
 #define PIN_UART_TX_MUX 0U
+#endif
+
+#ifndef PIN_UART_TX_CFG
 #define PIN_UART_TX_CFG 0x10B0u
-
-#else
-
-#error No UART pinning set
-
 #endif
 
 // LED Options ======================================
 
-#if defined(PINNING_LED_GPIO_11_H)
+// Default drive and MUX options for the LED used for status indication
+// if none are provided in the board_config.h
 
-#define PIN_LED         IOMUXC_GPIO_11_GPIOMUX_IO11
+#ifndef PIN_LED_MUX
 #define PIN_LED_MUX     0U
+#endif
+
+#ifndef PIN_LED_CFG
 #define PIN_LED_CFG     0x10B0U
-#define LED_GPIO_PORT   GPIO1
-#define LED_GPIO_PIN    11
-#define LED_STATE_ON    1
-
-#else
-
-#error No LED pinning set
-
 #endif
 
 // QSPI Options =====================================

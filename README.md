@@ -46,9 +46,9 @@ In general entries in `hw/bsp/newboard/board.mk` should reference existing pinni
 
 In general non-standard options are frowned upon because it changes the user experience of tinyUF2. However, on occasion these may be needed for specific reasons. The supported options are specified in `hw/bsp/<BOARD>/board_config.h` for a specific board. Not defining any of these options means sensible defaults will be applied;
 
-* `USB_VID`: Vendor ID for the board. Default is 0x239A.
+* `USB_VID`: Vendor ID for the board. Default is 0x239A, courtesy of Adafruit Industries.
 
-* `USB_PID`: PID for the board. Default is 0x0058 which is specifically defined as a generic tinyUF2 boot device. Do not select something else unless you've been allocated a new number.
+* `USB_PID`: PID for the board. Default is 0x0058 which is specifically defined as a generic tinyUF2 boot device. Do not select something else unless you've been allocated a new number by Adafruit.
 
 * `VOLUME_LABEL`: Volume Label for the tinyUF2 drive. Default is `UF2BOOT`.
 

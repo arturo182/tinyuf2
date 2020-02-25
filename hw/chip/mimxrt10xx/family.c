@@ -311,24 +311,24 @@ void board_init(void)
     usb_phy->TX = phytx;
 
     //----------- FLEXSPI ----------//
-    IOMUXC_SetPinMux(PIN_SS0,   PIN_SS0_MUX);
+    IOMUXC_SetPinMux(PIN_SS0, PIN_SS0_MUX);
     IOMUXC_SetPinMux(PIN_DATA1, PIN_DATA1_MUX);
     IOMUXC_SetPinMux(PIN_DATA2, PIN_DATA2_MUX);
     IOMUXC_SetPinMux(PIN_DATA0, PIN_DATA0_MUX);
-    IOMUXC_SetPinMux(PIN_SCLK,  PIN_SCLK_MUX);
+    IOMUXC_SetPinMux(PIN_SCLK, PIN_SCLK_MUX);
     IOMUXC_SetPinMux(PIN_DATA3, PIN_DATA3_MUX);
 #ifdef PIN_DQS
-    IOMUXC_SetPinMux(PIN_DQS,   PIN_DQS_MUX);
+    IOMUXC_SetPinMux(PIN_DQS, PIN_DQS_MUX);
 #endif
     
-    IOMUXC_SetPinConfig(PIN_SS0,   PIN_SS0_CFG);
+    IOMUXC_SetPinConfig(PIN_SS0, PIN_SS0_CFG);
     IOMUXC_SetPinConfig(PIN_DATA1, PIN_DATA1_CFG);
     IOMUXC_SetPinConfig(PIN_DATA2, PIN_DATA2_CFG);
     IOMUXC_SetPinConfig(PIN_DATA0, PIN_DATA0_CFG);
-    IOMUXC_SetPinConfig(PIN_SCLK,  PIN_SCLK_CFG);
+    IOMUXC_SetPinConfig(PIN_SCLK, PIN_SCLK_CFG);
     IOMUXC_SetPinConfig(PIN_DATA3, PIN_DATA3_CFG);
 #ifdef PIN_DQS
-    IOMUXC_SetPinConfig(PIN_DQS,   PIN_DQS_CFG);
+    IOMUXC_SetPinConfig(PIN_DQS, PIN_DQS_CFG);
 #endif
     SCB_DisableDCache();
 
@@ -389,6 +389,11 @@ extern uint32_t _bootloader_dbl_tap;
 void board_check_app_start(void)
 
 {
+  // This is the inital check to make sure we're not in the process
+  // of rebooting for a clean start of the application. This is
+  // deliberately done before any chip configuration so the application
+  // receives control of a chip in a as-close-to-clean condition as possible,
+
   register uint32_t app_start_address = *(uint32_t *)(APP_START_ADDRESS + 4);
 
   if (_bootloader_dbl_tap != DBL_TAP_MAGIC_QUICK_BOOT)
