@@ -4,6 +4,11 @@
 
 TinyUF2 is an open source cross-platform [UF2](https://github.com/Microsoft/uf2) bootloader based on the [TinyUSB](https://github.com/hathach/tinyusb/) library.
 
+## Using
+
+You will find compiled binaries in the `release-images` directory for each board. These are compiled with the default options. If you have a standard board and don't want to mess around, then you can use these. Instructions for deploying them can be found in a brief README.md file in each boards `hw/bsp/<BOARDNAME>` directory.
+
+
 ## Building
 
 Checkout the code and sync submodules:
