@@ -8,7 +8,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        boards: ['mimxrt1010_evk']
+        boards: ['mimxrt1010_evk','mimxrt1020_evk','versiboard2']
     steps:
     - name: Setup Node.js
       uses: actions/setup-node@v1.1.0

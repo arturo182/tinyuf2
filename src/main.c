@@ -31,7 +31,8 @@
 #include "bsp.h"
 #include "tusb.h"
 
-static uint32_t blink_interval_ms = 500;
+static uint32_t blink_interval_ms = BOARD_BLINK_INTERVAL;
+
 uint32_t reset_millis = 0;
 
 void led_blinking_task(void)
@@ -44,9 +45,8 @@ void led_blinking_task(void)
 
     start_ms += blink_interval_ms;
 
-    board_led_write(led_state);
-
     led_state = !led_state;
+    board_led_write(led_state);
 }
 
 void reset_task(void)
@@ -60,9 +60,10 @@ void reset_task(void)
 
 int main(void)
 {
+    board_check_app_start();
     board_init();
 
-    board_check_app_start();
+    board_check_tinyuf2_start();
 
     tusb_init();
 

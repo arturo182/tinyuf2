@@ -26,7 +26,7 @@
 #include <stdio.h>
 
 #include "tusb.h"
-#include "board_config.h"
+#include "bsp.h"
 #include "clock_config.h"
 
 #include "fsl_device_registers.h"
@@ -63,8 +63,8 @@ volatile uint32_t system_ticks = 0;
 #define FLASH_BUSY_STATUS_OFFSET 0
 #define FLASH_ERROR_STATUS_MASK 0x0e
 
-uint32_t _flash_page_addr = NO_CACHE;
-uint8_t  _flash_cache[SECTOR_SIZE] __attribute__((aligned(4)));
+static uint32_t _flash_page_addr = NO_CACHE;
+static uint8_t  _flash_cache[SECTOR_SIZE] __attribute__((aligned(4)));
 
 flexspi_device_config_t deviceconfig =
 {
@@ -178,23 +178,22 @@ void board_flash_flush(void)
 
         __disable_irq();
         status = flexspi_nor_flash_erase_sector(FLEXSPI, sector_addr);
+        __enable_irq();
         if (status != kStatus_Success) {
             printf("Page erase failure %ld!\r\n", status);
             return;
         }
-        __enable_irq();
 
         for (int i = 0; i < SECTOR_SIZE / FLASH_PAGE_SIZE; ++i) {
             __disable_irq();
             status = flexspi_nor_flash_page_program(FLEXSPI, sector_addr + i * FLASH_PAGE_SIZE, (void *)_flash_cache + i * FLASH_PAGE_SIZE);
+            __enable_irq();
+            DCACHE_CleanInvalidateByRange(_flash_page_addr, SECTOR_SIZE);
             if (status != kStatus_Success) {
                 printf("Page program failure %ld!\r\n", status);
                 return;
             }
-            __enable_irq();
         }
-
-        DCACHE_CleanInvalidateByRange(_flash_page_addr, SECTOR_SIZE);
     }
 }
 
@@ -210,7 +209,7 @@ uint32_t board_flash_read_blocks(uint8_t *dest, uint32_t block, uint32_t num_blo
 
 uint32_t board_flash_write_blocks(const uint8_t *src, uint32_t lba, uint32_t num_blocks)
 {
-    //printf("%s: src %p, lba %ld, num %ld\r\n", __func__, src, lba, num_blocks);
+  //  printf("%s: src %p, lba %ld, num %ld\r\n", __func__, src, lba, num_blocks);
 
     while (num_blocks) {
         uint32_t const addr      = lba2addr(lba);
@@ -221,6 +220,7 @@ uint32_t board_flash_write_blocks(const uint8_t *src, uint32_t lba, uint32_t num
 
         if (page_addr != _flash_page_addr) {
             // Write out anything in cache before overwriting it.
+
             board_flash_flush();
 
             _flash_page_addr = page_addr;
@@ -256,19 +256,9 @@ void board_reset(void)
     NVIC_SystemReset();
 }
 
-#define LED_PINMUX            IOMUXC_GPIO_11_GPIOMUX_IO11
-#define LED_PORT              GPIO1
-#define LED_PIN               11
-#define LED_STATE_ON          0
-
-// UART
-#define UART_PORT             LPUART1
-#define UART_RX_PINMUX        IOMUXC_GPIO_09_LPUART1_RXD
-#define UART_TX_PINMUX        IOMUXC_GPIO_10_LPUART1_TXD
-
 void board_led_write(bool state)
 {
-    GPIO_PinWrite(LED_PORT, LED_PIN, state ? LED_STATE_ON : (1-LED_STATE_ON));
+    GPIO_PinWrite(LED_GPIO_PORT, LED_GPIO_PIN, state ? LED_STATE_ON : (1-LED_STATE_ON));
 }
 
 #include "fsl_lpuart.h"
@@ -283,25 +273,17 @@ void board_init(void)
     CLOCK_EnableClock(kCLOCK_Iomuxc);
 
     // LED
-    IOMUXC_SetPinMux(LED_PINMUX, 0U);
-    IOMUXC_SetPinConfig(LED_PINMUX, 0x10B0U);
-
+    IOMUXC_SetPinMux(PIN_LED, PIN_LED_MUX);
+    IOMUXC_SetPinConfig(PIN_LED, PIN_LED_CFG);
     gpio_pin_config_t led_config = { kGPIO_DigitalOutput, 0, kGPIO_NoIntmode };
-    GPIO_PinInit(LED_PORT, LED_PIN, &led_config);
+    GPIO_PinInit(LED_GPIO_PORT, LED_GPIO_PIN, &led_config);
     board_led_write(false);
 
-    // Button
-    //IOMUXC_SetPinMux( BUTTON_PINMUX, 0U);
-    //IOMUXC_SetPinConfig(BUTTON_PINMUX, 0x01B0A0U);
-    //gpio_pin_config_t button_config = { kGPIO_DigitalInput, 0, kGPIO_IntRisingEdge, };
-    //GPIO_PinInit(BUTTON_PORT, BUTTON_PIN, &button_config);
-
     // UART
-    IOMUXC_SetPinMux( UART_TX_PINMUX, 0U);
-    IOMUXC_SetPinMux( UART_RX_PINMUX, 0U);
-    IOMUXC_SetPinConfig( UART_TX_PINMUX, 0x10B0u);
-    IOMUXC_SetPinConfig( UART_RX_PINMUX, 0x10B0u);
-
+    IOMUXC_SetPinMux( PIN_UART_TX, PIN_UART_TX_MUX);
+    IOMUXC_SetPinMux( PIN_UART_RX, PIN_UART_RX_MUX);
+    IOMUXC_SetPinConfig(PIN_UART_TX, PIN_UART_TX_CFG);
+    IOMUXC_SetPinConfig(PIN_UART_RX, PIN_UART_RX_CFG);
     lpuart_config_t uart_config;
     LPUART_GetDefaultConfig(&uart_config);
     uart_config.baudRate_Bps = 115200;
@@ -329,22 +311,25 @@ void board_init(void)
     usb_phy->TX = phytx;
 
     //----------- FLEXSPI ----------//
-    IOMUXC_SetPinMux(IOMUXC_GPIO_SD_06_FLEXSPI_A_SS0_B, 1U);
-    IOMUXC_SetPinMux(IOMUXC_GPIO_SD_07_FLEXSPI_A_DATA1,1U);
-    IOMUXC_SetPinMux(IOMUXC_GPIO_SD_08_FLEXSPI_A_DATA2, 1U);
-    IOMUXC_SetPinMux(IOMUXC_GPIO_SD_09_FLEXSPI_A_DATA0, 1U);
-    IOMUXC_SetPinMux(IOMUXC_GPIO_SD_10_FLEXSPI_A_SCLK, 1U);
-    IOMUXC_SetPinMux(IOMUXC_GPIO_SD_11_FLEXSPI_A_DATA3, 1U);
-    IOMUXC_SetPinMux(IOMUXC_GPIO_SD_12_FLEXSPI_A_DQS, 1U);
-
-    IOMUXC_SetPinConfig(IOMUXC_GPIO_SD_06_FLEXSPI_A_SS0_B,0x10E1U);
-    IOMUXC_SetPinConfig(IOMUXC_GPIO_SD_07_FLEXSPI_A_DATA1, 0x10E1U);
-    IOMUXC_SetPinConfig(IOMUXC_GPIO_SD_08_FLEXSPI_A_DATA2, 0x10E1U);
-    IOMUXC_SetPinConfig(IOMUXC_GPIO_SD_09_FLEXSPI_A_DATA0, 0x10E1U);
-    IOMUXC_SetPinConfig(IOMUXC_GPIO_SD_10_FLEXSPI_A_SCLK, 0x10E1U);
-    IOMUXC_SetPinConfig(IOMUXC_GPIO_SD_11_FLEXSPI_A_DATA3, 0x10E1U);
-    IOMUXC_SetPinConfig(IOMUXC_GPIO_SD_12_FLEXSPI_A_DQS, 0x10E1U);
-
+    IOMUXC_SetPinMux(PIN_SS0, PIN_SS0_MUX);
+    IOMUXC_SetPinMux(PIN_DATA1, PIN_DATA1_MUX);
+    IOMUXC_SetPinMux(PIN_DATA2, PIN_DATA2_MUX);
+    IOMUXC_SetPinMux(PIN_DATA0, PIN_DATA0_MUX);
+    IOMUXC_SetPinMux(PIN_SCLK, PIN_SCLK_MUX);
+    IOMUXC_SetPinMux(PIN_DATA3, PIN_DATA3_MUX);
+#ifdef PIN_DQS
+    IOMUXC_SetPinMux(PIN_DQS, PIN_DQS_MUX);
+#endif
+    
+    IOMUXC_SetPinConfig(PIN_SS0, PIN_SS0_CFG);
+    IOMUXC_SetPinConfig(PIN_DATA1, PIN_DATA1_CFG);
+    IOMUXC_SetPinConfig(PIN_DATA2, PIN_DATA2_CFG);
+    IOMUXC_SetPinConfig(PIN_DATA0, PIN_DATA0_CFG);
+    IOMUXC_SetPinConfig(PIN_SCLK, PIN_SCLK_CFG);
+    IOMUXC_SetPinConfig(PIN_DATA3, PIN_DATA3_CFG);
+#ifdef PIN_DQS
+    IOMUXC_SetPinConfig(PIN_DQS, PIN_DQS_CFG);
+#endif
     SCB_DisableDCache();
 
     flexspi_nor_flash_init(FLEXSPI);
@@ -379,7 +364,11 @@ void board_init(void)
 
 void board_delay_ms(uint32_t ms)
 {
-  SDK_DelayAtLeastUs(ms * 1000, SystemCoreClock);
+#if defined(MIMXRT1011_SERIES)
+    SDK_DelayAtLeastUs(ms*1000, SystemCoreClock);
+#else
+    SDK_DelayAtLeastUs(ms*1000);
+#endif
 }
 
 void USB_OTG1_IRQHandler(void)
@@ -398,28 +387,17 @@ void USB_OTG1_IRQHandler(void)
 extern uint32_t _bootloader_dbl_tap;
 
 void board_check_app_start(void)
+
 {
-  uint32_t app_start_address = *(uint32_t *)(APP_START_ADDRESS + 4);
+  // This is the inital check to make sure we're not in the process
+  // of rebooting for a clean start of the application. This is
+  // deliberately done before any chip configuration so the application
+  // receives control of a chip in a as-close-to-clean condition as possible,
 
-  /**
-   * Test reset vector of application @ APP_START_ADDRESS + 4
-   * Sanity check on the Reset_Handler address
-   */
-  if (app_start_address < APP_START_ADDRESS || app_start_address > BOARD_FLASH_BASE + BOARD_FLASH_SIZE) {
-    //printf("No valid app, staying in bootloader\r\n");
-    return; // stay in bootloader
-  }
+  register uint32_t app_start_address = *(uint32_t *)(APP_START_ADDRESS + 4);
 
-  if (_bootloader_dbl_tap == DBL_TAP_MAGIC) {
-    //printf("Detected double tap\r\n");
-    _bootloader_dbl_tap = 0;
-    return; // stay in bootloader
-  }
-
-  if (_bootloader_dbl_tap != DBL_TAP_MAGIC_QUICK_BOOT) {
-      _bootloader_dbl_tap = DBL_TAP_MAGIC;
-      board_delay_ms(500);
-  }
+  if (_bootloader_dbl_tap != DBL_TAP_MAGIC_QUICK_BOOT)
+    return;
 
   _bootloader_dbl_tap = 0;
 
@@ -430,5 +408,54 @@ void board_check_app_start(void)
   SCB->VTOR = ((uint32_t)APP_START_ADDRESS & SCB_VTOR_TBLOFF_Msk);
 
   /* Jump to application Reset Handler in the application */
-  asm("bx %0" ::"r"(app_start_address));
+  asm("bx %0" ::"r"(app_start_address));  
+}
+
+void board_check_tinyuf2_start(void)
+{
+  register uint32_t app_start_address = *(uint32_t *)(APP_START_ADDRESS + 4);
+
+  /**
+   * Test reset vector of application @ APP_START_ADDRESS + 4
+   * Sanity check on the Reset_Handler address
+   */
+  if (app_start_address < APP_START_ADDRESS || app_start_address > BOARD_FLASH_BASE + BOARD_FLASH_SIZE) {
+    return; // stay in bootloader
+  }
+
+  if (_bootloader_dbl_tap == DBL_TAP_MAGIC) {
+    _bootloader_dbl_tap = 0;
+    return; // stay in bootloader
+  }
+
+#ifdef BOARD_MULTITAP_COUNT
+  if (MULTITAP_AMCOUNTING(_bootloader_dbl_tap)) {
+    // A multi-tap count is in progress - see if it's expired
+    _bootloader_dbl_tap = MULTITAP_SETCOUNT( MULTITAP_GETCOUNT(_bootloader_dbl_tap)+1 );
+    if (MULTITAP_GETCOUNT(_bootloader_dbl_tap) == BOARD_MULTITAP_COUNT) {
+      _bootloader_dbl_tap = 0;
+      return; // We're done, stay in bootloader
+    }
+  }
+  else
+    // The multitap is just starting...
+    _bootloader_dbl_tap = MULTITAP_SETCOUNT(1);
+#else
+    _bootloader_dbl_tap = DBL_TAP_MAGIC;
+#endif
+    
+    // Now wait to see if the user wants to intervene...
+#ifdef BOARD_LED_ON_UF2_START
+    board_led_write(true);
+#endif
+
+    board_delay_ms(BOARD_TAP_WAIT);
+
+#ifdef BOARD_LED_ON_UF2_START
+    board_led_write(false);
+#endif
+
+  // If we made to here then we should boot into the application
+  _bootloader_dbl_tap = DBL_TAP_MAGIC_QUICK_BOOT;
+  board_reset();
 }

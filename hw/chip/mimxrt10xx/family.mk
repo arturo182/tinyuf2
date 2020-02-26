@@ -19,9 +19,9 @@ CFLAGS += \
 	-DUF2_FAMILY=0x4FB2D5BD
 
 SRC_C += \
-	hw/chip/mimxrt10xx/family.c \
-	hw/chip/mimxrt10xx/flexspi_nor_flash_ops.c \
-	hw/chip/mimxrt10xx/flexspi_nor_config.c \
+	hw/chip/$(TUF2_CHIP_FAMILY)/family.c \
+	hw/chip/$(TUF2_CHIP_FAMILY)/flexspi_nor_flash_ops.c \
+	hw/chip/$(TUF2_CHIP_FAMILY)/flexspi_nor_config.c \
 	$(MCU_DIR)/xip/fsl_flexspi_nor_boot.c \
 	$(MCU_DIR)/project_template/clock_config.c \
 	$(MCU_DIR)/drivers/fsl_clock.c \
@@ -32,6 +32,7 @@ SRC_C += \
 	$(MCU_DIR)/drivers/fsl_lpuart.c
 
 INC += \
+	hw/chip/$(TUF2_CHIP_FAMILY)/$(TUF2_CHIP_MEMBER) \
 	$(TOP)/$(MCU_DIR) \
 	$(TOP)/$(MCU_DIR)/drivers \
 	$(TOP)/$(MCU_DIR)/project_template \
