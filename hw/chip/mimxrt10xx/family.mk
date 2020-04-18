@@ -6,8 +6,6 @@ CFLAGS += \
 	-mfpu=fpv5-d16 \
 	-D__ARMVFP__=0 -D__ARMFPV5__=0 \
 	-D__START=main \
-	-DXIP_EXTERNAL_FLASH=1 \
-	-DXIP_BOOT_HEADER_ENABLE=1 \
 	-DCFG_TUSB_MCU=OPT_MCU_MIMXRT10XX \
 	-D__STARTUP_CLEAR_BSS
 
@@ -41,3 +39,15 @@ INC += \
 # For TinyUSB port source
 VENDOR = nxp
 CHIP_FAMILY = transdimension
+
+VARIANT ?= flash
+
+ifeq ($(VARIANT), ram)
+	CFLAGS += \
+		-DXIP_EXTERNAL_FLASH=0 \
+		-DXIP_BOOT_HEADER_ENABLE=0
+else
+	CFLAGS += \
+		-DXIP_EXTERNAL_FLASH=1 \
+		-DXIP_BOOT_HEADER_ENABLE=1
+endif
