@@ -5,6 +5,7 @@ _minimum_heap_size = 0;
 
 MEMORY
 {
+    FLASH_START (rx)  : ORIGIN = 0x60000000, LENGTH = 1K
     FLASH_CONFIG (rx) : ORIGIN = 0x60000400, LENGTH = 3K
     FLASH_IVT (rx)    : ORIGIN = 0x60001000, LENGTH = 4K
     FLASH_ISR (rx)    : ORIGIN = 0x60002000, LENGTH = 1K
@@ -19,6 +20,12 @@ __RAM_VECTOR_TABLE_SIZE_BYTES = 0;
 
 SECTIONS
 {
+    .flash :
+    {
+        . = ALIGN(4);
+        BYTE(0x00)
+    } > FLASH_START
+
     .flash_config :
     {
         . = ALIGN(4);
