@@ -130,10 +130,8 @@ static const struct TextFile info[] =
 #define DIRENTRIES_PER_SECTOR (512 / sizeof(DirEntry))
 STATIC_ASSERT(NUM_DIRENTRIES < DIRENTRIES_PER_SECTOR * ROOT_DIR_SECTORS);
 
-static WriteState write_state =
-{
-    .numBlocks = 0xffffffff
-};
+static int is_initialized;
+static WriteState write_state;
 
 static const FAT_BootBlock BootBlock =
 {
@@ -269,6 +267,11 @@ int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t* 
     UF2_Block *bl = (void *)buffer;
     if (!is_uf2_block(bl) || !UF2_IS_MY_FAMILY(bl)) {
         return bufsize;
+    }
+
+    if (!is_initialized) {
+        write_state.numBlocks = 0xffffffff;
+        is_initialized = 1;
     }
 
     if ((bl->flags & UF2_FLAG_NOFLASH) || bl->payloadSize != UF2_PAYLOAD_SIZE ||
