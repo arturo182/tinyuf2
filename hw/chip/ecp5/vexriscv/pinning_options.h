@@ -1,8 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2019 Ha Thach (tinyusb.org)
- * Copyright (c) 2020 Artur Pacholec
+ * Copyright (c) 2020, Dave Marples
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,56 +23,7 @@
  *
  */
 
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdbool.h>
+#ifndef _PINNING_OPTIONS_H_
+#define _PINNING_OPTIONS_H_
 
-#include "bsp.h"
-#include "tusb.h"
-
-static uint32_t blink_interval_ms = BOARD_BLINK_INTERVAL;
-
-uint32_t reset_millis = 0;
-
-void led_blinking_task(void)
-{
-    static uint32_t start_ms = 0;
-    static bool led_state = false;
-
-    if (board_millis() - start_ms < blink_interval_ms)
-        return;
-
-    start_ms += blink_interval_ms;
-
-    led_state = !led_state;
-    board_led_write(led_state);
-}
-
-void reset_task(void)
-{
-  if (!reset_millis)
-    return;
-
-  if (board_millis() > reset_millis)
-    board_reset();
-}
-
-int main(void)
-{
-    board_check_app_start();
-    board_init();
-
-    board_check_tinyuf2_start();
-
-    printf("TinyUF2 running\r\n");
-
-    tusb_init();
-
-    while (1) {
-        tud_task();
-        led_blinking_task();
-        reset_task();
-    }
-
-    return 0;
-}
+#endif

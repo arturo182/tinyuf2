@@ -1,7 +1,5 @@
 MCU_DIR = hw/mcu/nxp/sdk/devices/MIMXRT1021
 
-include hw/chip/$(TUF2_CHIP_FAMILY)/family.mk
-
 CFLAGS += -DCPU_MIMXRT1021DAG5A
 
 SRC_C += $(MCU_DIR)/system_MIMXRT1021.c

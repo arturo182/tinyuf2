@@ -30,11 +30,21 @@ SRC_C += \
 	$(MCU_DIR)/drivers/fsl_lpuart.c
 
 INC += \
+	-Ihw \
+	-Ihw/bsp \
+	-Ihw/bsp/$(BOARD) \
+	-Isrc \
+	-Ilib/tinyusb/tools \
+	-I_build/build-$(BOARD) \
 	hw/chip/$(TUF2_CHIP_FAMILY)/$(TUF2_CHIP_MEMBER) \
 	$(TOP)/$(MCU_DIR) \
 	$(TOP)/$(MCU_DIR)/drivers \
 	$(TOP)/$(MCU_DIR)/project_template \
-	$(TOP)/$(MCU_DIR)/../../CMSIS/Include \
+	$(TOP)/$(MCU_DIR)/../../CMSIS/Include
+
+SRC_C = \
+	$(addprefix $(CURRENT_PATH)/, $(wildcard src/*.c))
+
 
 # For TinyUSB port source
 VENDOR = nxp

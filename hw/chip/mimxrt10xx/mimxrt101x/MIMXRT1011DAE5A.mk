@@ -1,7 +1,5 @@
 MCU_DIR = hw/mcu/nxp/sdk/devices/MIMXRT1011
 
-include hw/chip/$(TUF2_CHIP_FAMILY)/family.mk
-
 CFLAGS += -DCPU_MIMXRT1011DAE5A
 
 ifeq ($(VARIANT), ram)
