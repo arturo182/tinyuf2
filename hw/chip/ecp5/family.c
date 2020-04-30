@@ -98,7 +98,7 @@ static void _burn_sector(void)
   spiBeginErase4(flash_ofs);
   while(spiIsBusy());
 
-  printf("Burn Offset %8x %d\n",flash_ofs, SECTOR_SIZE);
+  //printf("Burn Offset %8x %d\n",flash_ofs, SECTOR_SIZE);
 
   /* We can only write 256 octets at a time, so batch them up */
   uint32_t r=SECTOR_SIZE;
@@ -113,7 +113,7 @@ static void _burn_sector(void)
     }
   while (r);
   spiFree();
-  printf("Burn complete\n");
+  //printf("Burn complete\n");
 }
 // ---------------------------------------------------------------------------------------------
 void board_flash_flush(void)
@@ -121,7 +121,7 @@ void board_flash_flush(void)
     if ((_flash_sector_addr == NO_CACHE) || (_flash_sector_dirty == false))
         return;
   
-    printf(">>>Flush: %08x\n", _flash_sector_addr);
+    //printf(">>>Flush: %08x\n", _flash_sector_addr);
 
     _burn_sector();
     _flash_sector_dirty = false;
@@ -144,7 +144,7 @@ uint32_t board_flash_write_blocks(const uint8_t *src, uint32_t lba, uint32_t num
   if (!SAME_SECTOR(addr,_flash_sector_addr))
     {
       board_flash_flush();
-      printf("Read: %08x\n",ADDR_SECTOR(addr));
+      //printf("Read: %08x\n",ADDR_SECTOR(addr));
       _flash_sector_addr = ADDR_SECTOR(addr);
       _flash_sector_dirty = false;
       memcpy(_flash_cache, (uint8_t*) ADDR_SECTOR(addr), SECTOR_SIZE);      
@@ -152,10 +152,10 @@ uint32_t board_flash_write_blocks(const uint8_t *src, uint32_t lba, uint32_t num
 
   if (memcmp(&_flash_cache[ADDR_OFFSET(addr)],src,len)!=0)
     {
-      printf("Write to cache: %08x (%x) (%d) [lba was %d]\n",addr,ADDR_OFFSET(addr),num_blocks,lba);
+      //printf("Write to cache: %08x (%x) (%d) [lba was %d]\n",addr,ADDR_OFFSET(addr),num_blocks,lba);
       for (uint32_t t=0; t<256; t++)
         {
-          printf("%02X %02X %c   ",_flash_cache[ADDR_OFFSET(addr+t)],src[t],_flash_cache[ADDR_OFFSET(addr+t)]!=src[t]?'*':' ');
+          //printf("%02X %02X %c   ",_flash_cache[ADDR_OFFSET(addr+t)],src[t],_flash_cache[ADDR_OFFSET(addr+t)]!=src[t]?'*':' ');
         }
       /* Now update the right part of this sector with the new data */
       memcpy(&_flash_cache[ADDR_OFFSET(addr)],src,len);
@@ -163,7 +163,7 @@ uint32_t board_flash_write_blocks(const uint8_t *src, uint32_t lba, uint32_t num
     }
   else
     {
-      printf("Cachewrite skipped: %08x (%x) (%d) [lba was %d]\n",addr,ADDR_OFFSET(addr),num_blocks,lba);
+      //printf("Cachewrite skipped: %08x (%x) (%d) [lba was %d]\n",addr,ADDR_OFFSET(addr),num_blocks,lba);
     }
 
   return 0;
