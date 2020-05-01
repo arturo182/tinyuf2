@@ -8,6 +8,7 @@
 
 // Board flash
 #define BOARD_FLASH_SIZE 0x800000
+#define BOARD_FLASH_PAGE_SIZE 256
 
 // LED
 #define PIN_LED          IOMUXC_GPIO_AD_B0_05_GPIO1_IO05
