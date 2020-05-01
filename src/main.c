@@ -30,8 +30,9 @@
 
 #include "bsp.h"
 #include "tusb.h"
+#include "uf2_version.h"
 
-static uint32_t blink_interval_ms = BOARD_BLINK_INTERVAL;
+volatile uint32_t blink_interval_ms = BOARD_BLINK_INTERVAL;
 
 uint32_t reset_millis = 0;
 
@@ -58,6 +59,12 @@ void reset_task(void)
     board_reset();
 }
 
+void file_loading(void)
+
+{
+  blink_interval_ms = BOARD_LOADING_INTERVAL;
+}
+
 int main(void)
 {
     board_check_app_start();
@@ -65,7 +72,7 @@ int main(void)
 
     board_check_tinyuf2_start();
 
-    printf("TinyUF2 running\r\n");
+    printf("TinyUF2 running (Version " UF2_VERSION_BASE ", Created " __TIME__ " on " __DATE__ "\r\n");
 
     tusb_init();
 

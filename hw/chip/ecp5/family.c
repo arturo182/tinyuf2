@@ -32,7 +32,17 @@
 #include "spi.h"
 #include "uart.h"
 
+#define DEBUG 1
+
+#ifdef DEBUG
+#define DBG(...) printf(__VA_ARGS__)
+#else
+#define DBG(...) {}
+#endif
+
 volatile uint32_t system_ticks = 0;
+
+extern void file_loading(void);
 
 // Indicator that no Sector is currently cached
 #define NO_CACHE        0xffffffff
@@ -98,7 +108,7 @@ static void _burn_sector(void)
   spiBeginErase4(flash_ofs);
   while(spiIsBusy());
 
-  //printf("Burn Offset %8x %d\n",flash_ofs, SECTOR_SIZE);
+  DBG("Burn Offset %8x %d\n",flash_ofs, SECTOR_SIZE);
 
   /* We can only write 256 octets at a time, so batch them up */
   uint32_t r=SECTOR_SIZE;
@@ -113,7 +123,7 @@ static void _burn_sector(void)
     }
   while (r);
   spiFree();
-  //printf("Burn complete\n");
+  DBG("Burn complete\n");
 }
 // ---------------------------------------------------------------------------------------------
 void board_flash_flush(void)
@@ -121,7 +131,7 @@ void board_flash_flush(void)
     if ((_flash_sector_addr == NO_CACHE) || (_flash_sector_dirty == false))
         return;
   
-    //printf(">>>Flush: %08x\n", _flash_sector_addr);
+    DBG(">>>Flush: %08x\n", _flash_sector_addr);
 
     _burn_sector();
     _flash_sector_dirty = false;
@@ -139,12 +149,15 @@ uint32_t board_flash_write_blocks(const uint8_t *src, uint32_t lba, uint32_t num
 {
   uint32_t const addr = lba2addr(lba);
   uint32_t const len  = num_blocks*FILESYSTEM_BLOCK_SIZE;
+
+  /* Someone is trying to load something, let the user know */
+  file_loading();
   
   /* Flush any old cache and get the original content of the sector */
   if (!SAME_SECTOR(addr,_flash_sector_addr))
     {
       board_flash_flush();
-      //printf("Read: %08x\n",ADDR_SECTOR(addr));
+      DBG("\nRead: %08x [lba %d]\n",ADDR_SECTOR(addr),lba);
       _flash_sector_addr = ADDR_SECTOR(addr);
       _flash_sector_dirty = false;
       memcpy(_flash_cache, (uint8_t*) ADDR_SECTOR(addr), SECTOR_SIZE);      
@@ -152,18 +165,14 @@ uint32_t board_flash_write_blocks(const uint8_t *src, uint32_t lba, uint32_t num
 
   if (memcmp(&_flash_cache[ADDR_OFFSET(addr)],src,len)!=0)
     {
-      //printf("Write to cache: %08x (%x) (%d) [lba was %d]\n",addr,ADDR_OFFSET(addr),num_blocks,lba);
-      for (uint32_t t=0; t<256; t++)
-        {
-          //printf("%02X %02X %c   ",_flash_cache[ADDR_OFFSET(addr+t)],src[t],_flash_cache[ADDR_OFFSET(addr+t)]!=src[t]?'*':' ');
-        }
+      DBG("W");
       /* Now update the right part of this sector with the new data */
       memcpy(&_flash_cache[ADDR_OFFSET(addr)],src,len);
       _flash_sector_dirty = true;
     }
   else
     {
-      //printf("Cachewrite skipped: %08x (%x) (%d) [lba was %d]\n",addr,ADDR_OFFSET(addr),num_blocks,lba);
+      DBG("S");
     }
 
   return 0;
@@ -197,7 +206,9 @@ uint32_t board_millis(void)
 void board_reset(void)
 
 {
+  DBG("Reset request\n");
   board_flash_flush();
+  board_delay_ms(500);
   ctrl_reset_write(1);
 }
 // ---------------------------------------------------------------------------------------------

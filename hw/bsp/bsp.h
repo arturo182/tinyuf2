@@ -58,8 +58,13 @@
 #endif
 
 #ifndef BOARD_BLINK_INTERVAL
-// Define this for a different blinking interval in mS
-#define BOARD_BLINK_INTERVAL 500
+// Define this for a different blinking interval in mS while on standby
+#define BOARD_BLINK_INTERVAL     500
+#endif
+
+// Define this for a different blinking interval in mS while loading
+#ifndef BOARD_LOADING_INTERVAL
+#define BOARD_LOADING_INTERVAL   200
 #endif
 
 // If you want multiple taps (i.e. more than two)
