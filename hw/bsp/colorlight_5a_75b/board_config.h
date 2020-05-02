@@ -7,10 +7,9 @@
 #define BOARD_ID         "Colorlight_5a_75b"
 
 // Board flash
-#define BOARD_FLASH_SIZE 0x800000
+#define BOARD_FLASH_SIZE 0x400000
 
 // LED
-#define PIN_LED          0
 #define LED_STATE_ON     0
 
 #endif

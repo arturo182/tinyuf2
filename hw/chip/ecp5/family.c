@@ -32,13 +32,15 @@
 #include "spi.h"
 #include "uart.h"
 
-#define DEBUG 1
+//#define DEBUG 1
 
 #ifdef DEBUG
 #define DBG(...) printf(__VA_ARGS__)
 #else
 #define DBG(...) {}
 #endif
+
+enum { IO_LED, IO_HWRESET, IO_RED, IO_GREEN, IO_BLUE, IO_BUTTON } iopins;
 
 volatile uint32_t system_ticks = 0;
 
@@ -203,18 +205,37 @@ uint32_t board_millis(void)
     return system_ticks;
 }
 // ---------------------------------------------------------------------------------------------
+static void _hard_reset(bool active)
+
+{
+  gpio_out_write((gpio_in_read()&(~(1<<IO_HWRESET)))|(active?0:(1<<IO_HWRESET)));
+}
+// ---------------------------------------------------------------------------------------------
+static bool _button_pressed(void)
+
+{
+  return ((gpio_in_read()&(1<<IO_BUTTON))==0);
+}
+// ---------------------------------------------------------------------------------------------
 void board_reset(void)
 
 {
   DBG("Reset request\n");
   board_flash_flush();
   board_delay_ms(500);
-  ctrl_reset_write(1);
+  _hard_reset(true);
 }
 // ---------------------------------------------------------------------------------------------
 void board_led_write(bool state)
 {
-  gpio_out_write((gpio_out_read()&(~(1<<PIN_LED)))|((state ? LED_STATE_ON : (1-LED_STATE_ON))<<PIN_LED));
+  gpio_out_write((gpio_out_read()&(~(1<<IO_LED)))|((state ? LED_STATE_ON : (1-LED_STATE_ON))<<IO_LED));
+}
+// ---------------------------------------------------------------------------------------------
+void _init_io(void)
+
+{
+  _hard_reset(false);
+  gpio_oe_write( (1<<IO_LED) | (1<<IO_HWRESET) | (1<<IO_RED) | (1<<IO_GREEN) | (1<<IO_BLUE) );
 }
 // ---------------------------------------------------------------------------------------------
 void board_init(void)
@@ -250,13 +271,40 @@ void board_delay_ms(uint32_t ms)
 void board_check_app_start(void)
 
 {
-  // On this chip, we always go into uf2 mode if we're started
-  // because the entry functionality is done outside of this app.
+  // On this chip, we always go into the app if we're started
+  // but we can still use this routine to set up family specific things.
+
+  _init_io();
   return;
 }
 // ---------------------------------------------------------------------------------------------
 void board_check_tinyuf2_start(void)
 {
+  uint32_t tend = board_millis()+BOARD_BOOTING_WAIT;
+  uint32_t tflash = 0;
+  bool flash=false;
+
+  // If there's nothing sane in the main memory then jump to the uf2 bootloader directly
+  if ((*(uint32_t *)IMAGE_BASE)==0xffffffff)
+    {
+      return;
+    }
+  
+  while (board_millis()<tend)
+    {
+      if (board_millis()>=tflash)
+        {
+          board_led_write(flash=!flash);
+          tflash = board_millis()+BOARD_BOOTING_INTERVAL;
+        }
+
+      if (!_button_pressed())
+        {
+          // Button isn't pressed, so let's pack up and boot
+          board_led_write(false);
+          board_reset();
+        }
+    }
   return; // stay in bootloader
 }
 // ---------------------------------------------------------------------------------------------

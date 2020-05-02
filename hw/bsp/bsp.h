@@ -67,6 +67,14 @@
 #define BOARD_LOADING_INTERVAL   200
 #endif
 
+// Define this for a blinking interval while booting (set to 10 Hz to by outside primary photosensitive epilepsy region)
+#ifndef BOARD_BOOTING_INTERVAL
+#define BOARD_BOOTING_INTERVAL   100
+#endif
+
+// Length of time board needs boot button held down for to enter uf2 mode
+#define BOARD_BOOTING_WAIT       1000
+
 // If you want multiple taps (i.e. more than two)
 // define this to the correct value
 // #define BOARD_MULTITAP_COUNT 4
