@@ -1,3 +1,5 @@
+APP_START_ADDRESS ?= 0x6000C000
+
 CFLAGS += \
 	-mthumb \
 	-mabi=aapcs \
@@ -12,7 +14,7 @@ CFLAGS += \
 CFLAGS += -Wno-error=unused-parameter
 
 CFLAGS += \
-	-DAPP_START_ADDRESS=0x6000C000 \
+	-DAPP_START_ADDRESS=$(APP_START_ADDRESS) \
 	-DBOARD_FLASH_BASE=0x60000000 \
 	-DUF2_FAMILY=0x4FB2D5BD
 
