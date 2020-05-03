@@ -5,7 +5,7 @@ UF2_FAMILY = 0x35504345
 
 CDEFINES = -D__vexriscv__ -DNO_FLOAT
 CDEFINES += -DGIT_VERSION=u\"$(GIT_VERSION)\" -DUF2_VERSION_BASE=\"$(GIT_VERSION)\" -std=gnu11
-
+CDEFINES += -DUINT16_MAX=65535
 CFLAGS += \
 	 $(CDEFINES) \
 	 -march=rv32im  -mabi=ilp32 \
@@ -57,7 +57,7 @@ SRC_C += \
 	 $(TINYUSB_PATH)/src/tusb.c
 
 SRC_C += \
-        $(addprefix $(TOP)/, $(wildcard src/*.c))
+        $(addprefix $(MFTOP)/, $(wildcard src/*.c))
 
 # Assembly files can be name with upper case .S, convert it to .s 
 SRC_S := $(SRC_S:.S=.s)
@@ -105,12 +105,12 @@ $(BUILD)/$(BOARD)-firmware.hex: $(BUILD)/$(BOARD)-firmware.elf
 
 $(BUILD)/$(BOARD)-firmware.uf2: $(BUILD)/$(BOARD)-firmware.hex
 	$(QUIET)echo CREATE $@
-	$(PYTHON) $(TOP)/tools/uf2/utils/uf2conv.py -f $(UF2_FAMILY) -c -o $@ $^
+	$(PYTHON) $(MFTOP)/tools/uf2/utils/uf2conv.py -f $(UF2_FAMILY) -c -o $@ $^
 
 # We set vpath to point to the top of the tree so that the source files
 # can be located. By following this scheme, it allows a single build rule
 # to be used to compile all .c files.
-vpath %.c . $(TOP)
+vpath %.c . $(MFTOP)
 $(BUILD)/obj/%.o: %.c
 	$(QUIET)echo CC $(notdir $@)
 	$(QUIET)$(CC) $(CFLAGS) $(INC) -c -MD -o $@ $<
@@ -123,13 +123,13 @@ $(BUILD)/obj/%.o: %.c
 	  $(RM) $(@:.o=.d)
 
 # ASM sources lower case .s
-vpath %.s . $(TOP)
+vpath %.s . $(MFTOP)
 $(BUILD)/obj/%.o: %.s
 	$(QUIET)echo AS $(notdir $@)
 	$(QUIET)$(CC) -x assembler-with-cpp $(ASFLAGS) -c -o $@ $<
 
 # ASM sources upper case .S
-vpath %.S . $(TOP)
+vpath %.S . $(MFTOP)
 $(BUILD)/obj/%.o: %.S
 	$(QUIET)echo AS $(notdir $@)
 	$(QUIET)$(CC) -x assembler-with-cpp $(ASFLAGS) -c -o $@ $<

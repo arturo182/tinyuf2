@@ -14,12 +14,12 @@
 # perform the build step rather than the family script.
 
 # Force using the local board directory
-TOP := $(shell realpath `pwd`)
+MFTOP := $(shell realpath `pwd`)
 
-TINYUSB_PATH ?= $(TOP)/lib/tinyusb
+TINYUSB_PATH ?= $(MFTOP)/lib/tinyusb
 
 #-------------- Select the board to build for. ------------
-BOARD_LIST = $(sort $(subst /.,,$(subst $(TOP)/hw/bsp/,,$(wildcard $(TOP)/hw/bsp/*/.))))
+BOARD_LIST = $(sort $(subst /.,,$(subst $(MFTOP)/hw/bsp/,,$(wildcard $(MFTOP)/hw/bsp/*/.))))
 
 ifeq ($(filter $(BOARD),$(BOARD_LIST)),)
   $(info You must provide a BOARD parameter with 'BOARD=', supported boards are:)
@@ -39,7 +39,7 @@ __check_defined = \
 BUILD = _build/build-$(BOARD)
 
 # Board specific define
-include $(TOP)/hw/bsp/$(BOARD)/board.mk
+include $(MFTOP)/hw/bsp/$(BOARD)/board.mk
 
 #-------------- Cross Compiler  ------------
 # Can be set by board, default to ARM GCC
@@ -58,7 +58,7 @@ RM = rm
 
 # Include all source C in board folder
 #SRC_C += hw/bsp/board.c
-SRC_C += $(subst $(TOP)/,,$(wildcard $(TOP)/hw/bsp/$(BOARD)/*.c))
+SRC_C += $(subst $(MFTOP)/,,$(wildcard $(MFTOP)/hw/bsp/$(BOARD)/*.c))
 
 # Compiler Flags which are generic across all targets
 CFLAGS += \
@@ -102,8 +102,8 @@ $(BUILD)/uf2_version.h: Makefile
 
 OBJ += $(BUILD)/uf2_version.h
 
-include $(TOP)/hw/chip/$(TUF2_CHIP_FAMILY)/$(TUF2_CHIP_MEMBER)/$(TUF2_CHIP_VARIANT).mk
-include $(TOP)/hw/chip/$(TUF2_CHIP_FAMILY)/family.mk
+include $(MFTOP)/hw/chip/$(TUF2_CHIP_FAMILY)/$(TUF2_CHIP_MEMBER)/$(TUF2_CHIP_VARIANT).mk
+include $(MFTOP)/hw/chip/$(TUF2_CHIP_FAMILY)/family.mk
 
 ifndef OVERRIDE_TINYUSB_RULES
 include $(TINYUSB_PATH)/tools/top.mk
@@ -112,4 +112,3 @@ endif
 
 print-%:
 	@echo $* is $($*)
-

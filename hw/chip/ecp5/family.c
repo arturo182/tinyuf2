@@ -42,6 +42,9 @@
 
 enum { IO_LED, IO_HWRESET, IO_RED, IO_GREEN, IO_BLUE, IO_BUTTON } iopins;
 
+/* Indicator of if next reboot is to be to bootloader or app */
+bool rebootToBootloader = false;
+
 volatile uint32_t system_ticks = 0;
 
 extern void file_loading(void);
@@ -205,10 +208,19 @@ uint32_t board_millis(void)
     return system_ticks;
 }
 // ---------------------------------------------------------------------------------------------
-static void _hard_reset(bool active)
+static void _reset(bool active)
+
+/* We can either reset *this* firmware or boot the application - that's decided here */
 
 {
-  gpio_out_write((gpio_in_read()&(~(1<<IO_HWRESET)))|(active?0:(1<<IO_HWRESET)));
+  if ((active) && (rebootToBootloader))
+    {
+      ctrl_reset_write(1);
+    }
+  else
+    {
+      gpio_out_write((gpio_in_read()&(~(1<<IO_HWRESET)))|(active?0:(1<<IO_HWRESET)));
+    }
 }
 // ---------------------------------------------------------------------------------------------
 static bool _button_pressed(void)
@@ -223,7 +235,7 @@ void board_reset(void)
   DBG("Reset request\n");
   board_flash_flush();
   board_delay_ms(500);
-  _hard_reset(true);
+  _reset(true);
 }
 // ---------------------------------------------------------------------------------------------
 void board_led_write(bool state)
@@ -234,8 +246,23 @@ void board_led_write(bool state)
 void _init_io(void)
 
 {
-  _hard_reset(false);
+  _reset(false);
   gpio_oe_write( (1<<IO_LED) | (1<<IO_HWRESET) | (1<<IO_RED) | (1<<IO_GREEN) | (1<<IO_BLUE) );
+}
+// ---------------------------------------------------------------------------------------------
+void board_reset_to_bootloader(bool toBootloader)
+
+/* Called to ensure that next reset is into bootloader */
+
+{
+  if (toBootloader)
+    {
+      rebootToBootloader = true;
+    }
+  else
+    {
+      rebootToBootloader = false;
+    }
 }
 // ---------------------------------------------------------------------------------------------
 void board_init(void)

@@ -47,7 +47,6 @@
 #endif
 
 extern const char infoUf2File[];
-extern uint32_t _bootloader_dbl_tap;
 
 typedef struct {
     const uint8_t *buf_in;
@@ -220,7 +219,7 @@ void process_core(HID_InBuffer *pkt) {
         reset_millis = board_millis() + 30;
         break;
     case HF2_CMD_RESET_INTO_BOOTLOADER:
-        _bootloader_dbl_tap = DBL_TAP_MAGIC;
+        board_reset_to_bootloader(true);
         board_flash_flush();
         reset_millis = board_millis() + 30;
         break;

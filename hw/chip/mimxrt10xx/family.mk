@@ -33,19 +33,19 @@ SRC_C += \
 	$(MCU_DIR)/drivers/fsl_lpuart.c
 
 INC += \
-	-Ihw \
-	-Ihw/bsp \
-	-Ihw/bsp/$(BOARD) \
-	-Isrc \
-	-Ilib/tinyusb/tools \
-	-I_build/build-$(BOARD) \
+	hw \
+	hw/bsp \
+	hw/bsp/$(BOARD) \
+	src \
+	lib/tinyusb/tools \
+	_build/build-$(BOARD) \
 	hw/chip/$(TUF2_CHIP_FAMILY)/$(TUF2_CHIP_MEMBER) \
-	$(TOP)/$(MCU_DIR) \
-	$(TOP)/$(MCU_DIR)/drivers \
-	$(TOP)/$(MCU_DIR)/project_template \
-	$(TOP)/$(MCU_DIR)/../../CMSIS/Include
+	$(TINYUSB_PATH)/$(MCU_DIR) \
+	$(TINYUSB_PATH)/$(MCU_DIR)/drivers \
+	$(TINYUSB_PATH)/$(MCU_DIR)/project_template \
+	$(TINYUSB_PATH)/$(MCU_DIR)/../../CMSIS/Include
 
-SRC_C = \
+SRC_C += \
 	$(addprefix $(CURRENT_PATH)/, $(wildcard src/*.c))
 
 
@@ -64,3 +64,15 @@ else
 		-DXIP_EXTERNAL_FLASH=1 \
 		-DXIP_BOOT_HEADER_ENABLE=1
 endif
+
+$(BUILD)/$(BOARD)-firmware-padded.bin: $(BUILD)/$(BOARD)-firmware.bin
+	dd if=/dev/zero of=$(BUILD)/$(BOARD)-firmware-padded.bin bs=1 count=1024
+	cat $(BUILD)/$(BOARD)-firmware.bin >> $(BUILD)/$(BOARD)-firmware-padded.bin
+
+$(BUILD)/$(BOARD)-firmware-padded.uf2: $(BUILD)/$(BOARD)-firmware-padded.bin
+	@echo CREATE $@
+	$(PYTHON) $(MFTOP)/tools/uf2/utils/uf2conv.py -b $(BOARD_FLASH_BASE) -f $(UF2_FAMILY) -c -o $@ $^
+
+padded-bin: $(BUILD)/$(BOARD)-firmware-padded.bin
+
+padded-uf2: $(BUILD)/$(BOARD)-firmware-padded.uf2

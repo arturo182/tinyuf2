@@ -378,13 +378,28 @@ void USB_OTG1_IRQHandler(void)
 #endif
 
 #if CFG_TUSB_RHPORT0_MODE & OPT_MODE_DEVICE
-    tud_isr(0);
+    tud_int_handler(0);
 #endif
 }
 
 #include "uf2.h"
 
 extern uint32_t _bootloader_dbl_tap;
+
+void board_reset_to_bootloader(bool toBootloader)
+
+/* Called to ensure that next reset is into bootloader */
+
+{
+  if (toBootloader)
+    {
+      _bootloader_dbl_tap = DBL_TAP_MAGIC;
+    }
+  else
+    {
+      _bootloader_dbl_tap = 0;
+    }
+}
 
 void board_check_app_start(void)
 

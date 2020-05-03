@@ -16,7 +16,8 @@ Specify the board you want to build for:
 
 	$ make BOARD=mimxrt1010_evk
 
-Currently NXP MIMXRT101x, MIMXRT102x and vexriscv running on ecp5 colorlight_5a_75 boards are supported.
+Currently NXP MIMXRT101x, MIMXRT102x and vexriscv (running on ecp5) chips are supported, running on
+mimxrt1011_evk, mixmrt1020_evk, versiboard2, pergola and colorlight_5a_75 boards.
 
 ## Use
 

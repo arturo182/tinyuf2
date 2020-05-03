@@ -8,6 +8,7 @@
 
 // Board flash
 #define BOARD_FLASH_SIZE 0x400000
+#define BOARD_FLASH_PAGE_SIZE 256
 
 // LED
 #define LED_STATE_ON     0
