@@ -78,4 +78,17 @@ typedef struct {
 
 extern uint32_t reset_millis;
 
+// Configuration for HF2 HID support
+#ifndef HF2_USE_HID
+#define HF2_USE_HID 1
+#endif
+
+#ifndef HF2_USE_HID_SERIAL
+#define HF2_USE_HID_SERIAL 0
+#endif
+
+#ifndef HF2_USE_HID_EXT
+#define HF2_USE_HID_EXT 0
+#endif
+
 #endif // UF2_H_

@@ -31,6 +31,7 @@
 #include "bsp.h"
 #include "tusb.h"
 #include "uf2_version.h"
+#include "hid.h"
 
 volatile uint32_t blink_interval_ms = BOARD_BLINK_INTERVAL;
 
@@ -78,6 +79,7 @@ int main(void)
 
     while (1) {
         tud_task();
+        hf2_hid_task();
         led_blinking_task();
         reset_task();
     }

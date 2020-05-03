@@ -16,6 +16,7 @@
 // of that in the future. For now 8MB works.
 //#define BOARD_FLASH_SIZE 0x1000000
 #define BOARD_FLASH_SIZE 0x800000
+#define BOARD_FLASH_PAGE_SIZE 256
 
 // LED
 #define PIN_LED         IOMUXC_GPIO_11_GPIOMUX_IO11
