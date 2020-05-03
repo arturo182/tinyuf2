@@ -38,19 +38,7 @@
 
 #if CFG_TUD_HID
 
-#ifndef USE_HID
-#define USE_HID 1
-#endif
-
-#ifndef USE_HID_SERIAL
-#define USE_HID_SERIAL 0
-#endif
-
-#ifndef USE_HID_EXT
-#define USE_HID_EXT 0
-#endif
-
-#if USE_HID
+#if HF2_USE_HID
 
 #ifdef DEBUG
 #define log(...) printf(__VA_ARGS__)
@@ -109,11 +97,11 @@ uint32_t recv_hf2(HID_InBuffer *pkt) {
     assert(pkt->buf_in != NULL && pkt->buf_size > 0);
 
     uint8_t tag = pkt->buf_in[0];
-#if !USE_HID_SERIAL
+#if !HF2_USE_HID_SERIAL
     if (tag & 0x80) {
         return 0;
     }
-#endif // !USE_HID_SERIAL
+#endif // !HF2_USE_HID_SERIAL
     // serial packets not allowed when in middle of command packet
     assert(pkt->size == 0 || !(tag & HF2_FLAG_SERIAL_OUT));
     memcpy(pkt->buf + pkt->size, pkt->buf_in + 1, tag & HF2_SIZE_MASK);
@@ -121,9 +109,9 @@ uint32_t recv_hf2(HID_InBuffer *pkt) {
     assert(pkt->size <= sizeof(pkt->buf));
     tag &= HF2_FLAG_MASK;
     if (tag != HF2_FLAG_CMDPKT_BODY) {
-#if USE_HID_SERIAL
+#if HF2_USE_HID_SERIAL
         pkt->serial = tag - 0x40;
-#endif // USE_HID_SERIAL
+#endif // HF2_USE_HID_SERIAL
         uint32_t sz = pkt->size;
         pkt->size = 0;
         return sz;
@@ -185,7 +173,7 @@ void process_core(HID_InBuffer *pkt) {
 
     uint32_t tmp;
 
-#if USE_HID_SERIAL
+#if HF2_USE_HID_SERIAL
     if (pkt->serial) {
 #if USE_LOGS
         if (pkt->buf[0] == 'L') {
@@ -197,7 +185,7 @@ void process_core(HID_InBuffer *pkt) {
         }
         return;
     }
-#endif // USE_HID_SERIAL
+#endif // HF2_USE_HID_SERIAL
 
     log("HID sz=%ld, CMD=%ld", sz, pkt->cmd.command_id);
 
@@ -248,7 +236,7 @@ void process_core(HID_InBuffer *pkt) {
             board_flash_write_blocks((uint8_t*) cmd->write_flash_page.data, (cmd->write_flash_page.target_addr - BOARD_FLASH_BASE) / UF2_PAYLOAD_SIZE, 1);
         }
         return;
-#if USE_HID_EXT
+#if HF2_USE_HID_EXT
     case HF2_CMD_WRITE_WORDS:
         checkDataSize(write_words, cmd->write_words.num_words << 2);
         memcpy((void *)cmd->write_words.target_addr, cmd->write_words.words,
@@ -260,7 +248,7 @@ void process_core(HID_InBuffer *pkt) {
         memcpy(resp->data32, (void *)cmd->read_words.target_addr, tmp << 2);
         send_hf2_response(pkt, tmp << 2);
         return;
-#endif // USE_HID_EXT
+#endif // HF2_USE_HID_EXT
     case HF2_CMD_CHKSUM_PAGES:
         checkDataSize(chksum_pages, 0);
         checksum_pages(pkt, cmd->chksum_pages.target_addr, cmd->chksum_pages.num_pages);
@@ -275,7 +263,7 @@ void process_core(HID_InBuffer *pkt) {
     send_hf2_response(pkt, 0);
 }
 
-#endif // USE_HID
+#endif // HF2_USE_HID
 
 uint16_t tud_hid_get_report_cb(uint8_t report_id, hid_report_type_t report_type, uint8_t* buffer, uint16_t reqlen)
 {
@@ -284,22 +272,22 @@ uint16_t tud_hid_get_report_cb(uint8_t report_id, hid_report_type_t report_type,
 
 void tud_hid_set_report_cb(uint8_t report_id, hid_report_type_t report_type, uint8_t const* buffer, uint16_t bufsize)
 {
-#if USE_HID
+#if HF2_USE_HID
     state.pkt.buf_in = buffer;
     state.pkt.buf_size = bufsize;
     process_core(&state.pkt);
-#endif // USE_HID
+#endif // HF2_USE_HID
 }
 
 void hf2_hid_task(void)
 {
-#if USE_HID
+#if HF2_USE_HID
     if (!tud_hid_ready()) {
         return;
     }
 
     do_send_hf2();
-#endif // USE_HID
+#endif // HF2_USE_HID
 }
 
 #endif // CFG_TUD_HID
