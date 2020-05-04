@@ -70,5 +70,6 @@ SECTIONS
 
 }
 
-PROVIDE(_fstack = ORIGIN(sram) + LENGTH(sram) - 4);
+_bootloader_dbl_tap = ORIGIN(sram) + LENGTH(sram) - 4;
+PROVIDE(_fstack = ORIGIN(sram) + LENGTH(sram) - 8);
 PROVIDE(_flash_start = _fstart);

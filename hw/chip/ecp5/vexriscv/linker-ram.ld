@@ -57,5 +57,6 @@ SECTIONS
         } > spiflash
 }
 
-PROVIDE(_fstack = ORIGIN(main_ram) + LENGTH(main_ram) - 4);
+_bootloader_dbl_tap = ORIGIN(main_ram) + LENGTH(main_ram) - 4;
+PROVIDE(_fstack = ORIGIN(main_ram) + LENGTH(main_ram) - 8);
 PROVIDE(_flash_start = _fstart);

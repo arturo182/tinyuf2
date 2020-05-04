@@ -36,6 +36,7 @@
 #include "fsl_iomuxc.h"
 
 volatile uint32_t system_ticks = 0;
+volatile uint32_t blink_interval_ms = BOARD_BLINK_INTERVAL;
 
 // FLASH
 #define NO_CACHE        0xffffffff
@@ -424,6 +425,28 @@ void board_check_app_start(void)
 
   /* Jump to application Reset Handler in the application */
   asm("bx %0" ::"r"(app_start_address));  
+}
+
+void board_led_blinking_task(void)
+{
+    static uint32_t start_ms = 0;
+    static bool led_state = false;
+
+    if (board_millis() - start_ms < blink_interval_ms)
+        return;
+
+    start_ms += blink_interval_ms;
+
+    led_state = !led_state;
+    board_led_write(led_state);
+}
+
+void board_file_loading(void)
+
+// Called when a file loading process has started to fast-flash the LED
+
+{
+  blink_interval_ms = BOARD_LOADING_INTERVAL;
 }
 
 void board_check_tinyuf2_start(void)

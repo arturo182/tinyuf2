@@ -33,23 +33,7 @@
 #include "uf2_version.h"
 #include "hid.h"
 
-volatile uint32_t blink_interval_ms = BOARD_BLINK_INTERVAL;
-
 uint32_t reset_millis = 0;
-
-void led_blinking_task(void)
-{
-    static uint32_t start_ms = 0;
-    static bool led_state = false;
-
-    if (board_millis() - start_ms < blink_interval_ms)
-        return;
-
-    start_ms += blink_interval_ms;
-
-    led_state = !led_state;
-    board_led_write(led_state);
-}
 
 void reset_task(void)
 {
@@ -60,18 +44,14 @@ void reset_task(void)
     board_reset();
 }
 
-void file_loading(void)
-
-{
-  blink_interval_ms = BOARD_LOADING_INTERVAL;
-}
-
 int main(void)
 {
     board_check_app_start();
     board_init();
-
     board_check_tinyuf2_start();
+#ifdef reset_task
+    dfsdfdsfsd
+#endif
 
     printf("TinyUF2 running (Version " UF2_VERSION_BASE ", Created " __TIME__ " on " __DATE__ "\r\n");
 
@@ -80,7 +60,7 @@ int main(void)
     while (1) {
         tud_task();
         hf2_hid_task();
-        led_blinking_task();
+        board_led_blinking_task();
         reset_task();
     }
 

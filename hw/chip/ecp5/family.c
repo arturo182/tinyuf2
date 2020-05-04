@@ -31,10 +31,11 @@
 #include "irq.h"
 #include "spi.h"
 #include "uart.h"
+#include "uf2.h"
 
-//#define DEBUG 1
+//#define FAMILY_DEBUG 1
 
-#ifdef DEBUG
+#ifdef FAMILY_DEBUG
 #define DBG(...) printf(__VA_ARGS__)
 #else
 #define DBG(...) {}
@@ -42,12 +43,18 @@
 
 enum { IO_LED, IO_HWRESET, IO_RED, IO_GREEN, IO_BLUE, IO_BUTTON } iopins;
 
-/* Indicator of if next reboot is to be to bootloader or app */
-bool rebootToBootloader = false;
+// Indicator of if next reboot is to be to bootloader or app
+static bool rebootToBootloader = false;
 
-volatile uint32_t system_ticks = 0;
+// Overall time maintenance
+static volatile uint32_t _system_ticks = 0;
 
-extern void file_loading(void);
+// Flag indicating boot mode (set up in the linker file
+extern uint32_t _bootloader_dbl_tap;
+
+// Led flashing support
+static uint32_t _next_blink_event;                          /* Time in ticks for next blink crossover */
+static uint32_t _blink_interval;                            /* Addition of ticks for next event */
 
 // Indicator that no Sector is currently cached
 #define NO_CACHE        0xffffffff
@@ -80,16 +87,13 @@ static uint8_t  _flash_cache[SECTOR_SIZE] __attribute__((aligned(4)));
 
 
 // ---------------------------------------------------------------------------------------------
-static inline uint32_t add2flashOfs(uint32_t addr)
+// ---------------------------------------------------------------------------------------------
 
-/* Turn absolute address into offset into flash */
-
-{
-  return addr-FLASH_BASE;
-}
+// Flashing Related code
 
 // ---------------------------------------------------------------------------------------------
-static inline uint32_t lba2addr(uint32_t block)
+// ---------------------------------------------------------------------------------------------
+static inline uint32_t _lba2addr(uint32_t block)
 
 /* Turn LBA into address in memory (by implication, in the flash) */
 
@@ -108,7 +112,7 @@ static void _burn_sector(void)
       return;
     }
 
-  uint32_t flash_ofs = add2flashOfs(_flash_sector_addr);
+  uint32_t flash_ofs = _flash_sector_addr - FLASH_BASE;
   spiInit();
   spiBeginErase4(flash_ofs);
   while(spiIsBusy());
@@ -144,7 +148,7 @@ void board_flash_flush(void)
 // ---------------------------------------------------------------------------------------------
 uint32_t board_flash_read_blocks(uint8_t *dest, uint32_t block, uint32_t num_blocks)
 {
-    uint32_t src = lba2addr(block);
+    uint32_t src = _lba2addr(block);
     memcpy(dest, (uint8_t*) src, FILESYSTEM_BLOCK_SIZE * num_blocks);
     return 0;
 }
@@ -152,11 +156,11 @@ uint32_t board_flash_read_blocks(uint8_t *dest, uint32_t block, uint32_t num_blo
 uint32_t board_flash_write_blocks(const uint8_t *src, uint32_t lba, uint32_t num_blocks)
 
 {
-  uint32_t const addr = lba2addr(lba);
+  uint32_t const addr = _lba2addr(lba);
   uint32_t const len  = num_blocks*FILESYSTEM_BLOCK_SIZE;
 
   /* Someone is trying to load something, let the user know */
-  file_loading();
+  _blink_interval = BOARD_LOADING_INTERVAL;
   
   /* Flush any old cache and get the original content of the sector */
   if (!SAME_SECTOR(addr,_flash_sector_addr))
@@ -183,29 +187,13 @@ uint32_t board_flash_write_blocks(const uint8_t *src, uint32_t lba, uint32_t num
   return 0;
 }
 // ---------------------------------------------------------------------------------------------
-void isr(void)
-{
-    unsigned int irqs;
-    irqs = irq_pending() & irq_getmask();
-
-    if (irqs & (1 << USB_INTERRUPT))
-    {
-      tud_int_handler(0);
-    }
-
-    if (irqs & (1 << TIMER0_INTERRUPT))
-    {
-      system_ticks++;
-      timer0_ev_pending_write(1);
-    }
-
-    if(irqs & (1 << UART_INTERRUPT))
-      uart_isr();
-}
 // ---------------------------------------------------------------------------------------------
-uint32_t board_millis(void)
+
+// ---------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------
+static void _led_write(bool state)
 {
-    return system_ticks;
+  gpio_out_write((gpio_out_read()&(~(1<<IO_LED)))|((state ? LED_STATE_ON : (1-LED_STATE_ON))<<IO_LED));
 }
 // ---------------------------------------------------------------------------------------------
 static void _reset(bool active)
@@ -228,26 +216,66 @@ static bool _button_pressed(void)
 {
   return ((gpio_in_read()&(1<<IO_BUTTON))==0);
 }
-// ---------------------------------------------------------------------------------------------
-void board_reset(void)
 
-{
-  DBG("Reset request\n");
-  board_flash_flush();
-  board_delay_ms(500);
-  _reset(true);
-}
-// ---------------------------------------------------------------------------------------------
-void board_led_write(bool state)
-{
-  gpio_out_write((gpio_out_read()&(~(1<<IO_LED)))|((state ? LED_STATE_ON : (1-LED_STATE_ON))<<IO_LED));
-}
 // ---------------------------------------------------------------------------------------------
 void _init_io(void)
 
 {
   _reset(false);
+  _led_write(false);
   gpio_oe_write( (1<<IO_LED) | (1<<IO_HWRESET) | (1<<IO_RED) | (1<<IO_GREEN) | (1<<IO_BLUE) );
+}
+// ---------------------------------------------------------------------------------------------
+void isr(void)
+{
+    unsigned int irqs;
+    static bool led_state;
+    irqs = irq_pending() & irq_getmask();
+
+    if (irqs & (1 << USB_INTERRUPT))
+    {
+      tud_int_handler(0);
+    }
+
+    if (irqs & (1 << TIMER0_INTERRUPT))
+    {
+      _system_ticks++;
+      timer0_ev_pending_write(1);
+
+      if ((_blink_interval) && (_system_ticks>=_next_blink_event))
+        {
+          _led_write(led_state=!led_state);
+          _next_blink_event=_system_ticks+_blink_interval;
+        }
+    }
+
+    if(irqs & (1 << UART_INTERRUPT))
+      uart_isr();
+}
+// ---------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------
+//
+// External Interface
+//
+// ---------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------
+uint32_t board_millis(void)
+
+/* Return time since board start in mS */
+  
+{
+    return _system_ticks;
+}
+// ---------------------------------------------------------------------------------------------
+void board_reset(void)
+
+/* Reset the board */
+  
+{
+  DBG("Reset request\n");
+  board_flash_flush();
+  board_delay_ms(500);
+  _reset(true);
 }
 // ---------------------------------------------------------------------------------------------
 void board_reset_to_bootloader(bool toBootloader)
@@ -258,14 +286,19 @@ void board_reset_to_bootloader(bool toBootloader)
   if (toBootloader)
     {
       rebootToBootloader = true;
+      _bootloader_dbl_tap = DBL_TAP_MAGIC;
     }
   else
     {
       rebootToBootloader = false;
+      _bootloader_dbl_tap = 0;      
     }
 }
 // ---------------------------------------------------------------------------------------------
 void board_init(void)
+
+/* Perform essential board init */
+
 {
   irq_setmask(0);
 
@@ -289,6 +322,8 @@ void board_init(void)
 // ---------------------------------------------------------------------------------------------
 void board_delay_ms(uint32_t ms)
 
+/* Perform static delay in mS */
+
 {
   uint32_t p = board_millis();
 
@@ -305,33 +340,45 @@ void board_check_app_start(void)
   return;
 }
 // ---------------------------------------------------------------------------------------------
+void board_led_blinking_task(void)
+
+{
+  // For this CPU this function is done in the ISR
+}
+// ---------------------------------------------------------------------------------------------
 void board_check_tinyuf2_start(void)
+
+/* Check if we're to start the bootloader or the application (based on button held down) */
+
 {
   uint32_t tend = board_millis()+BOARD_BOOTING_WAIT;
-  uint32_t tflash = 0;
-  bool flash=false;
 
-  // If there's nothing sane in the main memory then jump to the uf2 bootloader directly
-  if ((*(uint32_t *)IMAGE_BASE)==0xffffffff)
+  // If there's nothing sane in the main memory or if we've been here
+  // before and we're coming back into the bootloader again then jump
+  // to the uf2 bootloader directly
+  
+  if ((_bootloader_dbl_tap==DBL_TAP_MAGIC) ||
+      ((*(uint32_t *)IMAGE_BASE)==0xffffffff))
     {
+      _bootloader_dbl_tap=0;
       return;
     }
-  
+
+#ifdef BOARD_LED_ON_UF2_START
+  _blink_interval = BOARD_BOOTING_INTERVAL;
+#endif
   while (board_millis()<tend)
     {
-      if (board_millis()>=tflash)
-        {
-          board_led_write(flash=!flash);
-          tflash = board_millis()+BOARD_BOOTING_INTERVAL;
-        }
 
       if (!_button_pressed())
         {
           // Button isn't pressed, so let's pack up and boot
-          board_led_write(false);
+          _blink_interval = BOARD_OFF_INTERVAL;
+          _led_write(false);
           board_reset();
         }
     }
+  _blink_interval = BOARD_BLINK_INTERVAL;
   return; // stay in bootloader
 }
 // ---------------------------------------------------------------------------------------------

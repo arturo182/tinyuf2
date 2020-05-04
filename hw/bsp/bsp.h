@@ -57,6 +57,8 @@
 #define BOARD_TAP_WAIT 500
 #endif
 
+#define BOARD_OFF_INTERVAL       0
+
 #ifndef BOARD_BLINK_INTERVAL
 // Define this for a different blinking interval in mS while on standby
 #define BOARD_BLINK_INTERVAL     500
@@ -69,7 +71,7 @@
 
 // Define this for a blinking interval while booting (set to 10 Hz to by outside primary photosensitive epilepsy region)
 #ifndef BOARD_BOOTING_INTERVAL
-#define BOARD_BOOTING_INTERVAL   100
+#define BOARD_BOOTING_INTERVAL   50
 #endif
 
 // Length of time board needs boot button held down for to enter uf2 mode
@@ -80,7 +82,7 @@
 // #define BOARD_MULTITAP_COUNT 4
 
 // If you want the LED on while in UF2 boot wait mode
-// #define BOARD_LED_ON_UF2_START
+#define BOARD_LED_ON_UF2_START
 
 void board_flash_flush(void);
 uint32_t board_flash_read_blocks(uint8_t *dest, uint32_t block, uint32_t num_blocks);
@@ -88,7 +90,7 @@ uint32_t board_flash_write_blocks(const uint8_t *src, uint32_t lba, uint32_t num
 uint32_t board_millis(void);
 void board_reset_to_bootloader(bool toBootloader);
 void board_reset(void);
-void board_led_write(bool state);
+void board_led_blinking_task(void);
 void board_init(void);
 void board_delay_ms(uint32_t ms);
 void board_check_app_start(void);
