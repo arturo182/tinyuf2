@@ -61,8 +61,8 @@ static inline bool is_uf2_block(void *data)
 // Static block size for all memories
 #define UDI_MSC_BLOCK_SIZE 512L
 
-// Needs to be more than ~4200 (to force FAT16)
-#define NUM_FAT_BLOCKS ((BOARD_FLASH_SIZE+UDI_MSC_BLOCK_SIZE-1)/UDI_MSC_BLOCK_SIZE)
+// Needs to be more than ~4200 (to force FAT16), and big enough for the biggest uf2 file...
+#define NUM_FAT_BLOCKS 65535
 
 #define CONCAT_1(a, b) a##b
 #define CONCAT_0(a, b) CONCAT_1(a, b)

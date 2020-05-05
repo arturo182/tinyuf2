@@ -36,7 +36,7 @@ __check_defined = \
     $(error Undefined make flag: $1$(if $2, ($2))))
 
 # Build directory
-BUILD = _build/build-$(BOARD)
+BUILD = _build/$(BOARD)
 
 # Board specific define
 include $(MFTOP)/hw/bsp/$(BOARD)/board.mk
@@ -81,12 +81,17 @@ CFLAGS += \
 	-Wno-unused-parameter \
         -Wunreachable-code
 
-# This causes lots of warning with nrf5x build due to nrfx code
-# CFLAGS += -Wcast-align
+INC += 	$(MFTOP)/hw \
+	$(MFTOP)/hw/bsp \
+	$(MFTOP)/hw/bsp/$(BOARD) \
+	$(MFTOP)/src \
+	$(TINYUSB_PATH)/tools \
+	$(BUILD) \
+	$(MFTOP)/hw/chip/$(TUF2_CHIP_FAMILY)/$(TUF2_CHIP_MEMBER) \
 
 # Debugging/Optimization
 ifeq ($(DEBUG), 1)
-  CFLAGS += -Og -ggdb
+  CFLAGS += -g3 -Og -ggdb
 else
         CFLAGS += -Os
 endif
@@ -109,6 +114,18 @@ ifndef OVERRIDE_TINYUSB_RULES
 include $(TINYUSB_PATH)/tools/top.mk
 include $(TINYUSB_PATH)/examples/rules.mk
 endif
+
+$(BUILD)/$(BOARD)-firmware-padded.bin: $(BUILD)/$(BOARD)-firmware.bin
+	dd if=/dev/zero of=$(BUILD)/$(BOARD)-firmware-padded.bin bs=1 count=1024
+	cat $(BUILD)/$(BOARD)-firmware.bin >> $(BUILD)/$(BOARD)-firmware-padded.bin
+
+$(BUILD)/$(BOARD)-firmware-padded.uf2: $(BUILD)/$(BOARD)-firmware-padded.bin
+	@echo CREATE $@
+	$(PYTHON) $(MFTOP)/tools/uf2/utils/uf2conv.py -b $(BOARD_FLASH_BASE) -f $(UF2_FAMILY) -c -o $@ $^
+
+padded-bin: $(BUILD)/$(BOARD)-firmware-padded.bin
+
+padded-uf2: $(BUILD)/$(BOARD)-firmware-padded.uf2
 
 print-%:
 	@echo $* is $($*)

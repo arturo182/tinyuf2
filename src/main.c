@@ -45,23 +45,21 @@ void reset_task(void)
 }
 
 int main(void)
+
 {
     board_check_app_start();
     board_init();
     board_check_tinyuf2_start();
-#ifdef reset_task
-    dfsdfdsfsd
-#endif
 
-    printf("TinyUF2 running (Version " UF2_VERSION_BASE ", Created " __TIME__ " on " __DATE__ "\r\n");
+      //printf("TinyUF2 running (Version " UF2_VERSION_BASE ", Created " __TIME__ " on " __DATE__ "\r\n");
 
     tusb_init();
 
     while (1) {
-        tud_task();
-        hf2_hid_task();
-        board_led_blinking_task();
-        reset_task();
+      tud_task();
+      hf2_hid_task();
+      board_led_blinking_task();
+      reset_task();
     }
 
     return 0;
