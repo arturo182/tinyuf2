@@ -1,5 +1,6 @@
-APP_START_ADDRESS ?= 0x6000C000
-BOARD_FLASH_BASE ?= 0x60000000
+# This file contains elements that are specific to this family of chips.
+# Elements that are generic should go into a higher level makefile.
+# Elements which are specific to a chip should go into the lower level mk file.
 
 CFLAGS += \
 	-mthumb \
@@ -9,20 +10,11 @@ CFLAGS += \
 	-mfpu=fpv5-d16 \
 	-D__ARMVFP__=0 -D__ARMFPV5__=0 \
 	-D__START=main \
-	-DCFG_TUSB_MCU=OPT_MCU_MIMXRT10XX \
 	-D__STARTUP_CLEAR_BSS
 
 CFLAGS += -Wno-error=unused-parameter
 
-CFLAGS += \
-	-DAPP_START_ADDRESS=$(APP_START_ADDRESS) \
-	-DBOARD_FLASH_BASE=$(BOARD_FLASH_BASE) \
-	-DUF2_FAMILY=0x4FB2D5BD
-
 SRC_C += \
-	hw/chip/$(TUF2_CHIP_FAMILY)/family.c \
-	hw/chip/$(TUF2_CHIP_FAMILY)/flexspi_nor_flash_ops.c \
-	hw/chip/$(TUF2_CHIP_FAMILY)/flexspi_nor_config.c \
 	$(MCU_DIR)/xip/fsl_flexspi_nor_boot.c \
 	$(MCU_DIR)/project_template/clock_config.c \
 	$(MCU_DIR)/drivers/fsl_clock.c \
@@ -33,20 +25,14 @@ SRC_C += \
 	$(MCU_DIR)/drivers/fsl_lpuart.c
 
 INC += \
-	$(TINYUSB_PATH)/$(MCU_DIR) \
-	$(TINYUSB_PATH)/$(MCU_DIR)/drivers \
-	$(TINYUSB_PATH)/$(MCU_DIR)/project_template \
-	$(TINYUSB_PATH)/$(MCU_DIR)/../../CMSIS/Include
-
-SRC_C += \
-	$(addprefix $(CURRENT_PATH)/, $(wildcard src/*.c))
-
+	-I$(MCU_DIR) \
+	-I$(MCU_DIR)/drivers \
+	-I$(MCU_DIR)/project_template \
+	-I$(MCU_DIR)/../../CMSIS/Include
 
 # For TinyUSB port source
-VENDOR = nxp
+VENDOR      = nxp
 CHIP_FAMILY = transdimension
-
-VARIANT ?= flash
 
 ifeq ($(VARIANT), ram)
 	CFLAGS += \

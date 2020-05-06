@@ -70,13 +70,15 @@ static inline bool is_uf2_block(void *data)
 
 #define MAX_BLOCKS (BOARD_FLASH_SIZE / UF2_PAYLOAD_SIZE + 100)
 
+// Delay in MS after last block before reset
+#define RESET_DELAY_MS (100)
+  
 typedef struct {
     uint32_t numBlocks;
     uint32_t numWritten;
     uint8_t writtenMask[MAX_BLOCKS / 8 + 1];
 } WriteState;
 
-extern uint32_t reset_millis;
 
 // Configuration for HF2 HID support
 #ifndef HF2_USE_HID
@@ -90,5 +92,8 @@ extern uint32_t reset_millis;
 #ifndef HF2_USE_HID_EXT
 #define HF2_USE_HID_EXT 0
 #endif
+
+// Reset the board this many ms into the future
+void reset_delay( uint32_t reset_delay_ms );
 
 #endif // UF2_H_

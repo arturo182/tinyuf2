@@ -30,8 +30,6 @@
 #include "uf2.h"
 #include "tusb.h"
 
-#define RESET_MILLIS (1000)
-
 #if CFG_TUD_MSC
 
 #define SERIAL0 (*(uint32_t *)0x0080A00C)
@@ -300,13 +298,13 @@ int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t* 
 
                 if (write_state.numWritten >= write_state.numBlocks) {
                     board_flash_flush();
-
-                    reset_millis = board_millis() + RESET_MILLIS;
+                    
+                    reset_delay( RESET_DELAY_MS );
                 }
             }
         } else {
           // reset after last block received
-          reset_millis = board_millis() + RESET_MILLIS;
+          reset_delay( RESET_DELAY_MS );          
         }
     }
 

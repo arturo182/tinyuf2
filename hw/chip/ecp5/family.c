@@ -61,6 +61,15 @@ static uint32_t _blink_interval;                            /* Addition of ticks
 
 #define MIN(a,b) ((a<b)?a:b)
 
+// This routine is not in the standard library, so delivered here instead
+int32_t __bswapsi2 (int32_t u)
+{
+  return ((((u) & 0xff000000) >> 24)
+          | (((u) & 0x00ff0000) >>  8)
+          | (((u) & 0x0000ff00) <<  8)
+          | (((u) & 0x000000ff) << 24));
+}
+
 // Sectors are 4K and individual writable parts are 256 bytes maximum. We hold the
 // 4K until the sector changes, then write it back to flash if it's changed. We
 // explicitly don't write it back if it hasn't changed, in the (mistaken?) belief

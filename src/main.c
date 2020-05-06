@@ -33,9 +33,14 @@
 #include "uf2_version.h"
 #include "hid.h"
 
-uint32_t reset_millis = 0;
+// Global timestamp
+static uint32_t reset_millis;
+
 
 void reset_task(void)
+
+/* Check to see if reset should be performed */
+
 {
   if (!reset_millis)
     return;
@@ -44,14 +49,20 @@ void reset_task(void)
     board_reset();
 }
 
+void reset_delay( uint32_t reset_delay_ms )
+
+/* Defer reset into the future */
+  
+{
+  reset_millis = board_millis() + reset_delay_ms;
+}
+
 int main(void)
 
 {
     board_check_app_start();
     board_init();
     board_check_tinyuf2_start();
-
-      //printf("TinyUF2 running (Version " UF2_VERSION_BASE ", Created " __TIME__ " on " __DATE__ "\r\n");
 
     tusb_init();
 
