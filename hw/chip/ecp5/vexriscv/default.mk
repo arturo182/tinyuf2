@@ -5,5 +5,6 @@ SRC_S += $(TOP)/hw/chip/$(TUF2_CHIP_FAMILY)/$(TUF2_CHIP_MEMBER)/crt0-vexriscv-ro
 
 LD_FILE = -T$(TOP)/hw/chip/$(TUF2_CHIP_FAMILY)/$(TUF2_CHIP_MEMBER)/linker-rom.ld  -L$(SOC_DIR)/include -L$(LITEX_DIR)
 
+INC += -I$(LITEX_DIR)/../cores/cpu/vexriscv
 
 CROSS_COMPILE ?= riscv64-unknown-elf-
