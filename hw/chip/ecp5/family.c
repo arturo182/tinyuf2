@@ -112,10 +112,11 @@ static void _gpio_wr(uint32_t clrBits, uint32_t setBits )
 /* Cleanly write to gpio */
   
 {
+  uint32_t is = irq_getie();
   irq_setie(0);
   gpio_stat = (gpio_stat&(~clrBits))|setBits;
   gpio_out_write(gpio_stat);
-  irq_setie(1);
+  irq_setie(is);
 }
 /* --------------------------------------------------------------------------------------------- */
 static void _led_write(bool state)
