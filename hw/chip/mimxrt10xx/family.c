@@ -36,6 +36,10 @@
 #include "fsl_iomuxc.h"
 
 volatile uint32_t system_ticks = 0;
+volatile uint32_t blink_interval_ms = BOARD_BLINK_INTERVAL;
+
+// Variable that will be kept across reboots
+extern uint32_t _bootloader_dbl_tap;
 
 // FLASH
 #define NO_CACHE        0xffffffff
@@ -378,13 +382,26 @@ void USB_OTG1_IRQHandler(void)
 #endif
 
 #if CFG_TUSB_RHPORT0_MODE & OPT_MODE_DEVICE
-    tud_isr(0);
+    tud_int_handler(0);
 #endif
 }
 
 #include "uf2.h"
 
-extern uint32_t _bootloader_dbl_tap;
+void board_reset_to_bootloader(bool toBootloader)
+
+/* Called to ensure that next reset is into bootloader */
+
+{
+  if (toBootloader)
+    {
+      _bootloader_dbl_tap = DBL_TAP_MAGIC;
+    }
+  else
+    {
+      _bootloader_dbl_tap = 0;
+    }
+}
 
 void board_check_app_start(void)
 
@@ -397,7 +414,9 @@ void board_check_app_start(void)
   register uint32_t app_start_address = *(uint32_t *)(APP_START_ADDRESS + 4);
 
   if (_bootloader_dbl_tap != DBL_TAP_MAGIC_QUICK_BOOT)
-    return;
+    {
+      return;
+    }
 
   _bootloader_dbl_tap = 0;
 
@@ -409,6 +428,28 @@ void board_check_app_start(void)
 
   /* Jump to application Reset Handler in the application */
   asm("bx %0" ::"r"(app_start_address));  
+}
+
+void board_led_blinking_task(void)
+{
+    static uint32_t start_ms = 0;
+    static bool led_state = false;
+
+    if (board_millis() - start_ms < blink_interval_ms)
+        return;
+
+    start_ms += blink_interval_ms;
+
+    led_state = !led_state;
+    board_led_write(led_state);
+}
+
+void board_file_loading(void)
+
+// Called when a file loading process has started to fast-flash the LED
+
+{
+  blink_interval_ms = BOARD_LOADING_INTERVAL;
 }
 
 void board_check_tinyuf2_start(void)
@@ -450,10 +491,7 @@ void board_check_tinyuf2_start(void)
 #endif
 
     board_delay_ms(BOARD_TAP_WAIT);
-
-#ifdef BOARD_LED_ON_UF2_START
     board_led_write(false);
-#endif
 
   // If we made to here then we should boot into the application
   _bootloader_dbl_tap = DBL_TAP_MAGIC_QUICK_BOOT;

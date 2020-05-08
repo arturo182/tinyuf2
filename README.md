@@ -16,6 +16,21 @@ Specify the board you want to build for:
 
 	$ make BOARD=mimxrt1010_evk
 
+Currently NXP MIMXRT101x, MIMXRT102x and vexriscv (running on ecp5) chips are supported, running on
+mimxrt1011_evk, mixmrt1020_evk, versiboard2, pergola and colorlight_5a_75 boards.
+
+## Use
+
+To enter tinyuf2;
+
+* on MIMXRT push the reset button once, then again within the timeframe of 200-500mS.
+
+* on ECP5 it's integration dependent, but generally just hold down the reset button while the board boots.
+
+It might take a few attempts to get entry right, but in all cases when you're in tinyuf2 you will see a LED flashing at 500mS on,
+500mS off and a drive TinyUF2 will appear. Drag and drop an appropriately formatted UF2 file onto this drive and, once it's
+flashed into the memory, the board will automatically reboot.
+
 ## Filesystem Structure
 
 The filesystem is structured as follows;
@@ -52,8 +67,8 @@ In general non-standard options are frowned upon because it changes the user exp
 
 * `VOLUME_LABEL`: Volume Label for the tinyUF2 drive. Default is `UF2BOOT`.
 
-* `BOARD_TAP_WAIT`: How long to wait for double-tap entry into bootloader before performing regular boot. Default is 500mS.
+* `BOARD_TAP_WAIT`: How long to wait for double-tap entry into bootloader before performing regular boot. Default is 500mS. Note that this is not used on ecp5/vexriscv, which comes directly into the tinyuf2 loader, rather than with a delay.
 
-* `BOARD_BLINK_INTERVAL`: Blinking interval while in tinyUF2. Default is 500uS on/off.
+* `BOARD_BLINK_INTERVAL`: Blinking interval while in tinyUF2. Default is 500mS on/off.
 
-* `BOARD_LED_ON_UF2_START`: Should the LED be on or off at UF2 boot? Default is off.
+* `BOARD_LED_ON_UF2_START`: Should the LED be on or off at UF2 boot? Default is off. Not relevant to ecp5/vexriscv.

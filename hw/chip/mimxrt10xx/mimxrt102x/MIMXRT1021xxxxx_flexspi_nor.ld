@@ -1,6 +1,6 @@
 ENTRY(Reset_Handler)
 
-_minimum_stack_size = 64K;
+_minimum_stack_size = 12K;
 _minimum_heap_size = 0;
 
 MEMORY
@@ -9,12 +9,11 @@ MEMORY
     FLASH_IVT (rx)    : ORIGIN = 0x60001000, LENGTH = 4K
     FLASH_ISR (rx)    : ORIGIN = 0x60002000, LENGTH = 1K
     FLASH_TEXT (rx)   : ORIGIN = 0x60002400, LENGTH = 27K
-    RAM (rwx)         : ORIGIN = 0x00000000, LENGTH = 32K
-    OCRAM (rwx)       : ORIGIN = 0x20200000, LENGTH = 64K
+    OCRAM (rwx)       : ORIGIN = 0x20200000, LENGTH = 32K
 }
 
-__StackTop = ORIGIN(OCRAM) + LENGTH(OCRAM);
-_bootloader_dbl_tap = ORIGIN(RAM) + LENGTH(RAM) - 4;
+__StackTop = ORIGIN(OCRAM) + LENGTH(OCRAM) - 8;
+_bootloader_dbl_tap = ORIGIN(OCRAM) + LENGTH(OCRAM) - 4;
 __RAM_VECTOR_TABLE_SIZE_BYTES = 0;
 
 SECTIONS
@@ -79,7 +78,7 @@ SECTIONS
         . = ALIGN(4);
 
         __data_end__ = .;       /* define a global symbol at data end */
-    } > RAM
+    } > OCRAM
 
     /* Uninitialized data section */
     .bss :
@@ -93,7 +92,7 @@ SECTIONS
         . = ALIGN(4);
         __bss_end__ = .;
         PROVIDE(end = .);
-    } > RAM
+    } > OCRAM
 
     .heap :
     {

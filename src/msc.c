@@ -279,7 +279,8 @@ int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t* 
     // this happens when we're trying to re-flash CURRENT.UF2 file previously
     // copied from a device; we still want to count these blocks to reset properly
     } else {
-        printf("uf2 write, target: 0x%08lX, size: %ld, block %ld, num blocks %ld\r\n", bl->targetAddr, bl->payloadSize, bl->blockNo, bl->numBlocks);
+      //printf("uf2 write, target: 0x%08lX, size: %ld, block %ld, num blocks %ld\r\n", bl->targetAddr, bl->payloadSize, bl->blockNo, bl->numBlocks);
+
         board_flash_write_blocks(bl->data, (bl->targetAddr - BOARD_FLASH_BASE) / UF2_PAYLOAD_SIZE, 1);
 
         if (bl->numBlocks) {
@@ -297,13 +298,13 @@ int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t* 
 
                 if (write_state.numWritten >= write_state.numBlocks) {
                     board_flash_flush();
-
-                    reset_millis = board_millis() + 30;
+                    
+                    reset_delay( RESET_DELAY_MS );
                 }
             }
         } else {
-            // reset 300ms after last block received
-            reset_millis = board_millis() + 300;
+          // reset after last block received
+          reset_delay( RESET_DELAY_MS );          
         }
     }
 

@@ -47,7 +47,6 @@
 #endif
 
 extern const char infoUf2File[];
-extern uint32_t _bootloader_dbl_tap;
 
 typedef struct {
     const uint8_t *buf_in;
@@ -155,7 +154,7 @@ void send_hf2_response(HID_InBuffer *pkt, uint32_t size) {
 
 static void checksum_pages(HID_InBuffer *pkt, int start, int num) {
     for (int i = 0; i < num; ++i) {
-        uint8_t *data = (uint8_t *)start + i * BOARD_FLASH_PAGE_SIZE;
+      uint8_t *data = (uint8_t *)(long)(start + i * BOARD_FLASH_PAGE_SIZE);
         uint16_t crc = 0;
         for (int j = 0; j < BOARD_FLASH_PAGE_SIZE; ++j) {
             crc = add_crc(*data++, crc);
@@ -216,13 +215,14 @@ void process_core(HID_InBuffer *pkt) {
         return;
 
     case HF2_CMD_RESET_INTO_APP:
+        board_reset_to_bootloader(false);      
         board_flash_flush();
-        reset_millis = board_millis() + 30;
+        reset_delay( RESET_DELAY_MS );
         break;
     case HF2_CMD_RESET_INTO_BOOTLOADER:
-        _bootloader_dbl_tap = DBL_TAP_MAGIC;
+        board_reset_to_bootloader(true);
         board_flash_flush();
-        reset_millis = board_millis() + 30;
+        reset_delay( RESET_DELAY_MS );
         break;
     case HF2_CMD_START_FLASH:
         // userspace app should reboot into bootloader on this command; we just ignore it

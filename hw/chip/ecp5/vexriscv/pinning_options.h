@@ -1,8 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2019 Ha Thach (tinyusb.org)
- * Copyright (c) 2020 Artur Pacholec
+ * Copyright (c) 2020, Dave Marples
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,54 +23,7 @@
  *
  */
 
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdbool.h>
+#ifndef _PINNING_OPTIONS_H_
+#define _PINNING_OPTIONS_H_
 
-#include "bsp.h"
-#include "tusb.h"
-#include "uf2_version.h"
-#include "hid.h"
-
-// Global timestamp
-static uint32_t reset_millis;
-
-
-void reset_task(void)
-
-/* Check to see if reset should be performed */
-
-{
-  if (!reset_millis)
-    return;
-
-  if (board_millis() > reset_millis)
-    board_reset();
-}
-
-void reset_delay( uint32_t reset_delay_ms )
-
-/* Defer reset into the future */
-  
-{
-  reset_millis = board_millis() + reset_delay_ms;
-}
-
-int main(void)
-
-{
-    board_check_app_start();
-    board_init();
-    board_check_tinyuf2_start();
-
-    tusb_init();
-
-    while (1) {
-      tud_task();
-      hf2_hid_task();
-      board_led_blinking_task();
-      reset_task();
-    }
-
-    return 0;
-}
+#endif
