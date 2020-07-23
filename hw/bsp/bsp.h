@@ -73,6 +73,7 @@ void board_flash_flush(void);
 uint32_t board_flash_read_blocks(uint8_t *dest, uint32_t block, uint32_t num_blocks);
 uint32_t board_flash_write_blocks(const uint8_t *src, uint32_t lba, uint32_t num_blocks);
 uint32_t board_millis(void);
+uint16_t *board_write_serial_number_string_descriptor(uint16_t *desc_str);
 void board_reset(void);
 void board_led_write(bool state);
 void board_init(void);

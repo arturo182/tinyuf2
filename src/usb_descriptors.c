@@ -157,18 +157,19 @@ uint8_t const *tud_descriptor_configuration_cb(uint8_t index)
 //--------------------------------------------------------------------+
 
 // array of pointer to string descriptors
+#define SERIAL_NUMBER_STRING_INDEX 3
 char const *string_desc_arr[] =
 {
     (const char[]) { 0x09, 0x04 }, // 0: is supported language is English (0x0409)
     "TinyUF2",                     // 1: Manufacturer
     "TinyUF2 Device",              // 2: Product
-    "123456",                      // 3: Serials, should use chip ID
+    "",                            // 3: Chip serial number placeholder
     "TinyUF2 CDC",                 // 4: CDC Interface
     "TinyUF2 MSC",                 // 5: MSC Interface
     "TinyUF2 HID"                  // 6: HID
 };
 
-static uint16_t _desc_str[32];
+static uint16_t _desc_str[34];
 
 // Invoked when received GET STRING DESCRIPTOR request
 // Application return pointer to descriptor, whose contents must exist long enough for transfer to complete
@@ -179,7 +180,12 @@ uint16_t const *tud_descriptor_string_cb(uint8_t index)
     if (index == 0) {
         memcpy(&_desc_str[1], string_desc_arr[0], 2);
         chr_count = 1;
-    } else {
+    }
+    //  If this is a request for the serial number, return the device's unique ID
+    else if (index == SERIAL_NUMBER_STRING_INDEX) {
+        return board_write_serial_number_string_descriptor(_desc_str);
+    }
+    else {
         // Convert ASCII string into UTF-16
         if (!(index < sizeof(string_desc_arr) / sizeof(string_desc_arr[0])))
             return NULL;

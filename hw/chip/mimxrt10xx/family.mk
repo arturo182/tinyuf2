@@ -30,7 +30,8 @@ SRC_C += \
 	$(MCU_DIR)/drivers/fsl_gpio.c \
 	$(MCU_DIR)/drivers/fsl_flexspi.c \
 	$(MCU_DIR)/drivers/fsl_common.c \
-	$(MCU_DIR)/drivers/fsl_lpuart.c
+	$(MCU_DIR)/drivers/fsl_lpuart.c \
+	$(MCU_DIR)/drivers/fsl_ocotp.c
 
 INC += \
 	hw/chip/$(TUF2_CHIP_FAMILY)/$(TUF2_CHIP_MEMBER) \
