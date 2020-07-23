@@ -34,6 +34,7 @@
 #include "fsl_cache.h"
 #include "fsl_gpio.h"
 #include "fsl_iomuxc.h"
+#include "fsl_ocotp.h"
 
 volatile uint32_t system_ticks = 0;
 
@@ -65,6 +66,10 @@ volatile uint32_t system_ticks = 0;
 
 static uint32_t _flash_page_addr = NO_CACHE;
 static uint8_t  _flash_cache[SECTOR_SIZE] __attribute__((aligned(4)));
+
+const char nibble_to_hex_upper[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+                                      'A', 'B', 'C', 'D', 'E', 'F'};
+
 
 flexspi_device_config_t deviceconfig =
 {
@@ -361,6 +366,40 @@ void board_init(void)
     NVIC_SetPriority(SysTick_IRQn, 2);
 }
 
+/**
+ * Populates and returns a USB string descriptor that describes
+ * this device's unique ID.
+ */
+uint16_t *board_write_serial_number_string_descriptor(uint16_t *desc_str)
+{
+    const unsigned serial_number_chars = 32;
+    int count = 0;
+
+    // Read and save the device serial number as normal Base32.
+
+    // Populate the length and string type, as these are the first two bytes
+    // of our descriptor.
+    desc_str[count++] = (TUSB_DESC_STRING << 8 ) | ((serial_number_chars * 2) + 2);
+
+    // Read out shadow registers 0x01 - 0x04 which contain configuration and manufacturing info
+    OCOTP_Init(OCOTP, CLOCK_GetFreq(kCLOCK_IpgClk));
+
+    const uint32_t serial[] = {
+        OCOTP_ReadFuseShadowRegister(OCOTP, 0x01),
+        OCOTP_ReadFuseShadowRegister(OCOTP, 0x02),
+        OCOTP_ReadFuseShadowRegister(OCOTP, 0x03),
+        OCOTP_ReadFuseShadowRegister(OCOTP, 0x04),
+    };
+
+    OCOTP_Deinit(OCOTP);
+
+    for (unsigned i = 0; i < 32; ++i) {
+        uint32_t hexit = serial[i / 8] >> ((i % 8) * 4);
+        desc_str[count++] = nibble_to_hex_upper[hexit & 0xF];
+    }
+
+    return desc_str;
+}
 
 void board_delay_ms(uint32_t ms)
 {
