@@ -298,7 +298,7 @@ int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t* 
                 if (write_state.numWritten >= write_state.numBlocks) {
                     board_flash_flush();
 
-                    reset_millis = board_millis() + 30;
+                    reset_millis = board_millis() + 100;
                 }
             }
         } else {
